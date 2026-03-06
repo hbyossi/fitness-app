@@ -115,6 +115,13 @@ export default function HomePage() {
               <div style={{ display: 'flex', gap: '0.3rem' }}>
                 <button
                   className="btn btn-ghost"
+                  onClick={() => navigate(`/plan/${plan.id}`)}
+                  title="צפייה"
+                >
+                  👁️
+                </button>
+                <button
+                  className="btn btn-ghost"
                   onClick={() => navigate(`/edit/${plan.id}`)}
                   title="ערוך"
                 >

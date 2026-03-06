@@ -5,6 +5,7 @@ import Navbar from './components/Navbar';
 import HomePage from './pages/HomePage';
 import CreatePlanPage from './pages/CreatePlanPage';
 import EditPlanPage from './pages/EditPlanPage';
+import ViewPlanPage from './pages/ViewPlanPage';
 import WorkoutSessionPage from './pages/WorkoutSessionPage';
 import HistoryPage from './pages/HistoryPage';
 import ExerciseBankPage from './pages/ExerciseBankPage';
@@ -20,6 +21,7 @@ export default function App() {
               <Route path="/" element={<HomePage />} />
               <Route path="/create" element={<CreatePlanPage />} />
               <Route path="/edit/:planId" element={<EditPlanPage />} />
+              <Route path="/plan/:planId" element={<ViewPlanPage />} />
               <Route path="/workout/:planId/:workoutId" element={<WorkoutSessionPage />} />
               <Route path="/history" element={<HistoryPage />} />
               <Route path="/bank" element={<ExerciseBankPage />} />
