@@ -2,20 +2,21 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useWorkout } from '../context/WorkoutContext';
 import ConfirmDialog from '../components/ConfirmDialog';
+import { InstructionsFields, normalizeInstructions } from '../components/ExerciseInstructions';
 
 function AddExerciseForm({ onAdd, onCancel, exerciseBank }) {
   const [name, setName] = useState('');
   const [sets, setSets] = useState('3');
   const [reps, setReps] = useState('12');
   const [weight, setWeight] = useState('');
-  const [instructions, setInstructions] = useState('');
+  const [instructions, setInstructions] = useState({ startingPosition: '', execution: '', tempo: '', notes: '' });
 
   const handlePickFromBank = (id) => {
     if (!id) return;
     const ex = exerciseBank.find(e => e.id === id);
     if (ex) {
       setName(ex.name);
-      setInstructions(ex.instructions || '');
+      setInstructions(normalizeInstructions(ex.instructions));
       if (ex.defaultSets) setSets(String(ex.defaultSets));
       if (ex.defaultReps) setReps(String(ex.defaultReps));
     }
@@ -28,7 +29,7 @@ function AddExerciseForm({ onAdd, onCancel, exerciseBank }) {
       sets: parseInt(sets) || 3,
       reps: parseInt(reps) || 12,
       weight: parseFloat(weight) || 0,
-      instructions: instructions.trim()
+      instructions
     });
   };
 
@@ -60,17 +61,8 @@ function AddExerciseForm({ onAdd, onCancel, exerciseBank }) {
           <input className="form-input" type="number" min="0" step="0.5" value={weight} onChange={e => setWeight(e.target.value)} placeholder="0" />
         </div>
       </div>
-      <div className="form-group">
-        <label className="form-label">הוראות ביצוע</label>
-        <textarea
-          className="form-input"
-          value={instructions}
-          onChange={e => setInstructions(e.target.value)}
-          placeholder="לדוגמה: לשמור על גב ישר, לרדת לאט..."
-          rows={2}
-        />
-      </div>
-      <div style={{ display: 'flex', gap: '0.4rem' }}>
+      <InstructionsFields value={instructions} onChange={setInstructions} />
+      <div style={{ display: 'flex', gap: '0.4rem', marginTop: '0.5rem' }}>
         <button type="button" className="btn btn-success" style={{ flex: 1 }} onClick={handleSubmit}>✅ הוסף</button>
         <button type="button" className="btn btn-ghost" onClick={onCancel}>ביטול</button>
       </div>

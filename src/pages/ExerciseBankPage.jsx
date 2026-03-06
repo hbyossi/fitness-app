@@ -2,20 +2,21 @@ import React, { useState } from 'react';
 import { useWorkout } from '../context/WorkoutContext';
 import { MUSCLE_GROUPS } from '../utils/helpers';
 import ConfirmDialog from '../components/ConfirmDialog';
+import { InstructionsFields, InstructionsDisplay, normalizeInstructions, hasInstructions } from '../components/ExerciseInstructions';
 
 export default function ExerciseBankPage() {
   const { state, dispatch } = useWorkout();
   const bank = state.exerciseBank || [];
 
   const [name, setName] = useState('');
-  const [instructions, setInstructions] = useState('');
+  const [instructions, setInstructions] = useState({ startingPosition: '', execution: '', tempo: '', notes: '' });
   const [muscleGroup, setMuscleGroup] = useState(MUSCLE_GROUPS[0]);
   const [defaultSets, setDefaultSets] = useState('3');
   const [defaultReps, setDefaultReps] = useState('12');
 
   const [editingId, setEditingId] = useState(null);
   const [editName, setEditName] = useState('');
-  const [editInstructions, setEditInstructions] = useState('');
+  const [editInstructions, setEditInstructions] = useState({ startingPosition: '', execution: '', tempo: '', notes: '' });
   const [editMuscle, setEditMuscle] = useState('');
   const [editSets, setEditSets] = useState('');
   const [editReps, setEditReps] = useState('');
@@ -30,14 +31,14 @@ export default function ExerciseBankPage() {
       type: 'ADD_BANK_EXERCISE',
       payload: {
         name: name.trim(),
-        instructions: instructions.trim(),
+        instructions,
         muscleGroup,
         defaultSets: parseInt(defaultSets) || 3,
         defaultReps: parseInt(defaultReps) || 12
       }
     });
     setName('');
-    setInstructions('');
+    setInstructions({ startingPosition: '', execution: '', tempo: '', notes: '' });
     setDefaultSets('3');
     setDefaultReps('12');
   };
@@ -45,7 +46,7 @@ export default function ExerciseBankPage() {
   const startEdit = (ex) => {
     setEditingId(ex.id);
     setEditName(ex.name);
-    setEditInstructions(ex.instructions || '');
+    setEditInstructions(normalizeInstructions(ex.instructions));
     setEditMuscle(ex.muscleGroup);
     setEditSets(String(ex.defaultSets || 3));
     setEditReps(String(ex.defaultReps || 12));
@@ -58,7 +59,7 @@ export default function ExerciseBankPage() {
       payload: {
         id: editingId,
         name: editName.trim(),
-        instructions: editInstructions.trim(),
+        instructions: editInstructions,
         muscleGroup: editMuscle,
         defaultSets: parseInt(editSets) || 3,
         defaultReps: parseInt(editReps) || 12
@@ -111,17 +112,8 @@ export default function ExerciseBankPage() {
             <input className="form-input" type="number" min="1" value={defaultReps} onChange={e => setDefaultReps(e.target.value)} />
           </div>
         </div>
-        <div className="form-group">
-          <label className="form-label">הוראות ביצוע</label>
-          <textarea
-            className="form-input"
-            value={instructions}
-            onChange={e => setInstructions(e.target.value)}
-            placeholder="לדוגמה: לשמור על גב ישר, לרדת לאט, לנשום בשלב העלייה..."
-            rows={3}
-          />
-        </div>
-        <button type="submit" className="btn btn-success btn-full">✅ הוסף למאגר</button>
+        <InstructionsFields value={instructions} onChange={setInstructions} />
+        <button type="submit" className="btn btn-success btn-full" style={{ marginTop: '0.5rem' }}>✅ הוסף למאגר</button>
       </form>
 
       {/* Filter by muscle group */}
@@ -186,16 +178,8 @@ export default function ExerciseBankPage() {
                   <input className="form-input" type="number" min="1" value={editReps} onChange={e => setEditReps(e.target.value)} />
                 </div>
               </div>
-              <div className="form-group">
-                <label className="form-label">הוראות ביצוע</label>
-                <textarea
-                  className="form-input"
-                  value={editInstructions}
-                  onChange={e => setEditInstructions(e.target.value)}
-                  rows={3}
-                />
-              </div>
-              <div style={{ display: 'flex', gap: '0.4rem' }}>
+              <InstructionsFields value={editInstructions} onChange={setEditInstructions} />
+              <div style={{ display: 'flex', gap: '0.4rem', marginTop: '0.5rem' }}>
                 <button className="btn btn-success" style={{ flex: 1 }} onClick={saveEdit}>✅ שמור</button>
                 <button className="btn btn-ghost" onClick={() => setEditingId(null)}>ביטול</button>
               </div>
@@ -214,8 +198,8 @@ export default function ExerciseBankPage() {
                   <button className="btn btn-ghost" onClick={() => setDeleteId(ex.id)}>🗑️</button>
                 </div>
               </div>
-              {ex.instructions && (
-                <div className="exercise-instructions" style={{ marginTop: '0.3rem' }}>📋 {ex.instructions}</div>
+              {hasInstructions(ex.instructions) && (
+                <div style={{ marginTop: '0.3rem' }}><InstructionsDisplay instructions={ex.instructions} /></div>
               )}
             </>
           )}

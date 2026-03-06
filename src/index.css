@@ -275,6 +275,43 @@ body {
   line-height: 1.4;
 }
 
+.instructions-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin-top: 0.3rem;
+}
+
+.instruction-section {
+  background: rgba(245, 158, 11, 0.08);
+  border-right: 3px solid var(--warning);
+  border-radius: 6px;
+  padding: 0.4rem 0.6rem;
+}
+
+.instruction-section-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--warning);
+  margin-bottom: 0.15rem;
+}
+
+.instruction-section-text {
+  font-size: 0.82rem;
+  color: var(--text);
+  line-height: 1.4;
+  white-space: pre-line;
+}
+
+.instructions-form-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  padding: 0.5rem;
+  background: var(--bg-input);
+  border-radius: 8px;
+}
+
 /* ── Workout Session ── */
 .set-row {
   display: grid;

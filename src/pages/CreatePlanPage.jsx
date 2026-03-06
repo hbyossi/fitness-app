@@ -2,19 +2,20 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useWorkout } from '../context/WorkoutContext';
 import { MUSCLE_GROUPS, generateId } from '../utils/helpers';
+import { InstructionsFields, InstructionsDisplay, hasInstructions, normalizeInstructions } from '../components/ExerciseInstructions';
 
 function ExerciseForm({ onAdd, exerciseBank }) {
   const [exName, setExName] = useState('');
   const [exSets, setExSets] = useState('3');
   const [exReps, setExReps] = useState('12');
   const [exWeight, setExWeight] = useState('');
-  const [exInstructions, setExInstructions] = useState('');
+  const [exInstructions, setExInstructions] = useState({ startingPosition: '', execution: '', tempo: '', notes: '' });
 
   const pickFromBank = (id) => {
     const ex = exerciseBank.find(e => e.id === id);
     if (!ex) return;
     setExName(ex.name);
-    setExInstructions(ex.instructions || '');
+    setExInstructions(normalizeInstructions(ex.instructions));
     setExSets(String(ex.defaultSets || 3));
     setExReps(String(ex.defaultReps || 12));
   };
@@ -27,11 +28,11 @@ function ExerciseForm({ onAdd, exerciseBank }) {
       sets: parseInt(exSets) || 3,
       reps: parseInt(exReps) || 12,
       weight: parseFloat(exWeight) || 0,
-      instructions: exInstructions.trim()
+      instructions: exInstructions
     });
     setExName('');
     setExWeight('');
-    setExInstructions('');
+    setExInstructions({ startingPosition: '', execution: '', tempo: '', notes: '' });
   };
 
   return (
@@ -67,17 +68,8 @@ function ExerciseForm({ onAdd, exerciseBank }) {
           <input className="form-input" type="number" min="0" step="0.5" value={exWeight} onChange={e => setExWeight(e.target.value)} placeholder="0" />
         </div>
       </div>
-      <div className="form-group">
-        <label className="form-label">הוראות ביצוע</label>
-        <textarea
-          className="form-input"
-          value={exInstructions}
-          onChange={e => setExInstructions(e.target.value)}
-          placeholder="לדוגמה: לשמור על גב ישר, לרדת לאט..."
-          rows={2}
-        />
-      </div>
-      <button type="button" className="btn btn-primary btn-full" onClick={handleAdd}>
+      <InstructionsFields value={exInstructions} onChange={setExInstructions} />
+      <button type="button" className="btn btn-primary btn-full" style={{ marginTop: '0.5rem' }} onClick={handleAdd}>
         ➕ הוסף תרגיל
       </button>
     </div>
@@ -188,7 +180,7 @@ export default function CreatePlanPage() {
                   <div className="exercise-detail">
                     {ex.sets} סטים × {ex.reps} חזרות{ex.weight > 0 && ` · ${ex.weight} ק"ג`}
                   </div>
-                  {ex.instructions && <div className="exercise-instructions">📋 {ex.instructions}</div>}
+                  {hasInstructions(ex.instructions) && <InstructionsDisplay instructions={ex.instructions} />}
                 </div>
                 <button type="button" className="btn btn-danger" onClick={() => removeExercise(wIdx, ex.id)}>הסר</button>
               </div>
