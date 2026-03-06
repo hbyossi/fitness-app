@@ -1,29 +1,74 @@
 const STORAGE_KEY = 'fitness_app_data';
+const CURRENT_VERSION = 2;
 
-const emptyState = { plans: [], history: [], exerciseBank: [] };
+const emptyState = { _version: CURRENT_VERSION, plans: [], history: [], exerciseBank: [] };
+
+// Each migration transforms data from version N-1 to N
+const migrations = [
+  // v0 → v1: add exerciseBank array
+  (data) => {
+    if (!data.exerciseBank) data.exerciseBank = [];
+    return data;
+  },
+  // v1 → v2: ensure exercises have restTime, instructions as object
+  (data) => {
+    for (const plan of (data.plans || [])) {
+      for (const w of (plan.workouts || [])) {
+        for (const ex of (w.exercises || [])) {
+          if (ex.restTime === undefined) ex.restTime = 90;
+          if (!ex.instructions || typeof ex.instructions === 'string') {
+            ex.instructions = {
+              startingPosition: '',
+              execution: typeof ex.instructions === 'string' ? ex.instructions : '',
+              tempo: '',
+              notes: ''
+            };
+          }
+        }
+      }
+    }
+    if (!Array.isArray(data.history)) data.history = [];
+    return data;
+  }
+];
+
+function runMigrations(data) {
+  let version = data._version || 0;
+  while (version < CURRENT_VERSION) {
+    console.log(`Migrating data from v${version} to v${version + 1}`);
+    data = migrations[version](data);
+    version++;
+  }
+  data._version = CURRENT_VERSION;
+  return data;
+}
 
 export function loadData() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return emptyState;
+    if (!raw) return { ...emptyState };
     const data = JSON.parse(raw);
     if (!data || typeof data !== 'object' || !Array.isArray(data.plans)) {
       console.error('Corrupt data detected, structure invalid');
-      alert('\u05d0\u05d5\u05d4\u05d6\u05e8\u05d4: \u05e0\u05ea\u05d5\u05e0\u05d9\u05dd \u05e4\u05d2\u05d5\u05de\u05d9\u05dd \u05d6\u05d5\u05d4\u05d5 \u05d1\u05d0\u05d7\u05e1\u05d5\u05df. \u05d4\u05e0\u05ea\u05d5\u05e0\u05d9\u05dd \u05d0\u05d5\u05e4\u05e1\u05d5.');
-      return emptyState;
+      alert('אוהזרה: נתונים פגומים זוהו באחסון. הנתונים אופסו.');
+      return { ...emptyState };
     }
-    if (!data.exerciseBank) data.exerciseBank = [];
-    if (!Array.isArray(data.history)) data.history = [];
-    return data;
+    const migrated = runMigrations(data);
+    // Save migrated data if version changed
+    if ((data._version || 0) < CURRENT_VERSION) {
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(migrated)); } catch {}
+    }
+    return migrated;
   } catch (e) {
     console.error('Failed to parse stored data:', e);
-    alert('\u05e9\u05d2\u05d9\u05d0\u05d4 \u05d1\u05e7\u05e8\u05d9\u05d0\u05ea \u05e0\u05ea\u05d5\u05e0\u05d9\u05dd \u05de\u05d4\u05d0\u05d7\u05e1\u05d5\u05df. \u05d4\u05e0\u05ea\u05d5\u05e0\u05d9\u05dd \u05d0\u05d5\u05e4\u05e1\u05d5. \u05de\u05d5\u05de\u05dc\u05e5 \u05dc\u05d9\u05d9\u05d1\u05d0 \u05d2\u05d9\u05d1\u05d5\u05d9.');
-    return emptyState;
+    alert('שגיאה בקריאת נתונים מהאחסון. הנתונים אופסו. מומלץ לייבא גיבוי.');
+    return { ...emptyState };
   }
 }
 
 export function saveData(data) {
   try {
+    data._version = CURRENT_VERSION;
     const json = JSON.stringify(data);
     localStorage.setItem(STORAGE_KEY, json);
   } catch (e) {
@@ -72,13 +117,17 @@ export function exportData() {
 export function validateImportData(data) {
   if (!data || typeof data !== 'object') return false;
   if (!Array.isArray(data.plans)) return false;
-  if (!Array.isArray(data.history)) return false;
-  if (!Array.isArray(data.exerciseBank)) return false;
+  // Allow older exports missing exerciseBank/history — migrations will fix them
+  if (data.exerciseBank && !Array.isArray(data.exerciseBank)) return false;
+  if (data.history && !Array.isArray(data.history)) return false;
   for (const plan of data.plans) {
     if (!plan.id || !plan.name || !Array.isArray(plan.workouts)) return false;
     for (const w of plan.workouts) {
       if (!w.id || !w.name || !Array.isArray(w.exercises)) return false;
     }
   }
+  // Run migrations on imported data to bring it up to date
+  const migrated = runMigrations({ ...data });
+  Object.assign(data, migrated);
   return true;
 }
