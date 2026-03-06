@@ -1,13 +1,13 @@
 import React from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { useWorkout } from '../context/WorkoutContext';
+import { usePlans } from '../context/AppProvider';
 import { InstructionsToggle, hasInstructions } from '../components/ExerciseInstructions';
 
 export default function ViewPlanPage() {
   const { planId } = useParams();
-  const { state } = useWorkout();
+  const { plans } = usePlans();
   const navigate = useNavigate();
-  const plan = state.plans.find(p => p.id === planId);
+  const plan = plans.find(p => p.id === planId);
 
   if (!plan) {
     return (

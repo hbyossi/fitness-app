@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
-import { useWorkout } from '../context/WorkoutContext';
+import { useBank } from '../context/AppProvider';
 import { MUSCLE_GROUPS } from '../utils/helpers';
 import ConfirmDialog from '../components/ConfirmDialog';
 import { InstructionsFields, InstructionsToggle, normalizeInstructions, hasInstructions } from '../components/ExerciseInstructions';
 import type { Instructions, BankExercise } from '../types';
 
 export default function ExerciseBankPage() {
-  const { state, dispatch } = useWorkout();
-  const bank = state.exerciseBank || [];
+  const { exerciseBank, dispatchBank } = useBank();
+  const bank = exerciseBank;
 
   const [name, setName] = useState('');
   const [instructions, setInstructions] = useState<Instructions>({ startingPosition: '', execution: '', tempo: '', notes: '' });
@@ -28,7 +28,7 @@ export default function ExerciseBankPage() {
   const handleAdd = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return;
-    dispatch({
+    dispatchBank({
       type: 'ADD_BANK_EXERCISE',
       payload: {
         name: name.trim(),
@@ -55,7 +55,7 @@ export default function ExerciseBankPage() {
 
   const saveEdit = () => {
     if (!editName.trim() || !editingId) return;
-    dispatch({
+    dispatchBank({
       type: 'UPDATE_BANK_EXERCISE',
       payload: {
         id: editingId,
@@ -71,7 +71,7 @@ export default function ExerciseBankPage() {
 
   const handleDelete = () => {
     if (!deleteId) return;
-    dispatch({ type: 'DELETE_BANK_EXERCISE', payload: deleteId });
+    dispatchBank({ type: 'DELETE_BANK_EXERCISE', payload: deleteId });
     setDeleteId(null);
   };
 

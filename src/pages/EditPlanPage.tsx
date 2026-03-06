@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { useWorkout } from '../context/WorkoutContext';
+import { usePlans, useBank } from '../context/AppProvider';
 import { MUSCLE_GROUPS, generateId } from '../utils/helpers';
 import { InstructionsFields, normalizeInstructions } from '../components/ExerciseInstructions';
 import SortableExerciseList from '../components/SortableExerciseList';
@@ -99,11 +99,11 @@ function ExerciseForm({ onAdd, exerciseBank }: { onAdd: (ex: Exercise) => void; 
 
 export default function EditPlanPage() {
   const { planId } = useParams();
-  const { state, dispatch } = useWorkout();
+  const { plans, dispatchPlans } = usePlans();
+  const { exerciseBank } = useBank();
   const navigate = useNavigate();
 
-  const plan = state.plans.find(p => p.id === planId);
-  const exerciseBank = state.exerciseBank || [];
+  const plan = plans.find(p => p.id === planId);
 
   const [planName, setPlanName] = useState(plan?.name || '');
   const [workouts, setWorkouts] = useState<TempWorkout[]>(() =>
@@ -171,7 +171,7 @@ export default function EditPlanPage() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!planName.trim() || workouts.length === 0 || totalExercises === 0 || !planId) return;
-    dispatch({
+    dispatchPlans({
       type: 'UPDATE_PLAN',
       payload: {
         id: planId,

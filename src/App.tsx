@@ -1,6 +1,6 @@
 import React from 'react';
 import { HashRouter, Routes, Route } from 'react-router-dom';
-import { WorkoutProvider } from './context/WorkoutContext';
+import { AppProvider } from './context/AppProvider';
 import ErrorBoundary from './components/ErrorBoundary';
 import Navbar from './components/Navbar';
 import HomePage from './pages/HomePage';
@@ -15,7 +15,7 @@ import WorkoutSummaryPage from './pages/WorkoutSummaryPage';
 export default function App() {
   return (
     <ErrorBoundary>
-      <WorkoutProvider>
+      <AppProvider>
         <HashRouter>
           <div className="app">
             <Navbar />
@@ -33,7 +33,7 @@ export default function App() {
           </main>
         </div>
       </HashRouter>
-    </WorkoutProvider>
+    </AppProvider>
     </ErrorBoundary>
   );
 }

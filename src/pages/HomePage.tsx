@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useWorkout } from '../context/WorkoutContext';
+import { usePlans, useBank, useImportData } from '../context/AppProvider';
 import ConfirmDialog from '../components/ConfirmDialog';
 import { InstructionsFields, normalizeInstructions } from '../components/ExerciseInstructions';
 import { exportData, validateImportData, getStorageUsage } from '../utils/storage';
@@ -115,7 +115,9 @@ function AddExerciseForm({ onAdd, onCancel, exerciseBank }: { onAdd: (ex: AddExe
 }
 
 export default function HomePage() {
-  const { state, dispatch } = useWorkout();
+  const { plans, dispatchPlans } = usePlans();
+  const { exerciseBank } = useBank();
+  const importData = useImportData();
   const navigate = useNavigate();
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [addingExercise, setAddingExercise] = useState<{ planId: string; workoutId: string } | null>(null);
@@ -134,7 +136,7 @@ export default function HomePage() {
           return;
         }
         if (!window.confirm(`ייבוא יחליף את כל הנתונים הנוכחיים. נמצאו ${data.plans.length} תוכניות, ${data.history.length} אימונים ו-${data.exerciseBank.length} תרגילים במאגר. להמשיך?`)) return;
-        dispatch({ type: 'IMPORT_DATA', payload: data });
+        importData(data);
         alert('הנתונים יובאו בהצלחה! ✅');
       } catch {
         alert('שגיאה בקריאת הקובץ. ודא שזהו קובץ JSON תקין.');
@@ -146,7 +148,7 @@ export default function HomePage() {
 
   const handleAddExercise = (exercise: AddExerciseData) => {
     if (!addingExercise) return;
-    dispatch({
+    dispatchPlans({
       type: 'ADD_EXERCISE',
       payload: { planId: addingExercise.planId, workoutId: addingExercise.workoutId, exercise: { ...exercise, restTime: exercise.restTime ?? 90 } }
     });
@@ -155,7 +157,7 @@ export default function HomePage() {
 
   const handleDelete = () => {
     if (!deleteId) return;
-    dispatch({ type: 'DELETE_PLAN', payload: deleteId });
+    dispatchPlans({ type: 'DELETE_PLAN', payload: deleteId });
     setDeleteId(null);
   };
 
@@ -163,17 +165,17 @@ export default function HomePage() {
     <div>
       <div className="page-header">
         <h1 className="page-title">התוכניות שלי</h1>
-        <span className="badge badge-primary">{state.plans.length} תוכניות</span>
+        <span className="badge badge-primary">{plans.length} תוכניות</span>
       </div>
 
-      {state.plans.length === 0 ? (
+      {plans.length === 0 ? (
         <div className="empty-state">
           <div className="empty-icon">💪</div>
           <div className="empty-text">אין תוכניות אימון עדיין</div>
           <Link to="/create" className="btn btn-primary">צור תוכנית חדשה</Link>
         </div>
       ) : (
-        state.plans.map(plan => (
+        plans.map(plan => (
           <div key={plan.id} className="card">
             <div className="card-header">
               <div>
@@ -192,7 +194,7 @@ export default function HomePage() {
                 </button>
                 <button
                   className="btn btn-ghost"
-                  onClick={() => dispatch({ type: 'DUPLICATE_PLAN', payload: plan.id })}
+                  onClick={() => dispatchPlans({ type: 'DUPLICATE_PLAN', payload: plan.id })}
                   title="שכפל"
                 >
                   📋
@@ -266,7 +268,7 @@ export default function HomePage() {
                     <AddExerciseForm
                       onAdd={handleAddExercise}
                       onCancel={() => setAddingExercise(null)}
-                      exerciseBank={state.exerciseBank || []}
+                      exerciseBank={exerciseBank}
                     />
                   )}
                 </React.Fragment>

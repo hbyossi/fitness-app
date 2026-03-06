@@ -1,23 +1,23 @@
 import React, { useState } from 'react';
-import { useWorkout } from '../context/WorkoutContext';
+import { useHistory } from '../context/AppProvider';
 import { formatTime } from '../utils/helpers';
 import ConfirmDialog from '../components/ConfirmDialog';
 import type { HistoryEntry } from '../types';
 
 export default function HistoryPage() {
-  const { state, dispatch } = useWorkout();
+  const { history, dispatchHistory } = useHistory();
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
   const handleDelete = () => {
     if (!deleteId) return;
-    dispatch({ type: 'DELETE_HISTORY', payload: deleteId });
+    dispatchHistory({ type: 'DELETE_HISTORY', payload: deleteId });
     setDeleteId(null);
   };
 
   // Weekly stats
   const now = new Date();
   const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-  const thisWeek = state.history.filter(e => new Date(e.date) >= weekAgo);
+  const thisWeek = history.filter(e => new Date(e.date) >= weekAgo);
   const weeklyVolume = thisWeek.reduce((acc, entry) =>
     acc + entry.exercises.reduce((a, ex) =>
       a + ex.sets.filter(s => s.done).reduce((s, set) => s + set.weight * set.reps, 0), 0), 0
@@ -25,7 +25,7 @@ export default function HistoryPage() {
 
   // Group by date
   const grouped: Record<string, HistoryEntry[]> = {};
-  state.history.forEach(entry => {
+  history.forEach(entry => {
     const dateKey = new Date(entry.date).toLocaleDateString('he-IL');
     if (!grouped[dateKey]) grouped[dateKey] = [];
     grouped[dateKey].push(entry);
@@ -35,10 +35,10 @@ export default function HistoryPage() {
     <div>
       <div className="page-header">
         <h1 className="page-title">היסטוריית אימונים</h1>
-        <span className="badge badge-primary">{state.history.length} אימונים</span>
+        <span className="badge badge-primary">{history.length} אימונים</span>
       </div>
 
-      {state.history.length > 0 && (
+      {history.length > 0 && (
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.6rem', marginBottom: '1rem' }}>
           <div className="card" style={{ textAlign: 'center', marginBottom: 0 }}>
             <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>🏋️ אימונים השבוע</div>
@@ -51,7 +51,7 @@ export default function HistoryPage() {
         </div>
       )}
 
-      {state.history.length === 0 ? (
+      {history.length === 0 ? (
         <div className="empty-state">
           <div className="empty-icon">📊</div>
           <div className="empty-text">עדיין לא ביצעת אימונים</div>

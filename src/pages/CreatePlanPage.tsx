@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useWorkout } from '../context/WorkoutContext';
+import { usePlans, useBank } from '../context/AppProvider';
 import { MUSCLE_GROUPS, generateId } from '../utils/helpers';
 import { InstructionsFields, normalizeInstructions } from '../components/ExerciseInstructions';
 import SortableExerciseList from '../components/SortableExerciseList';
@@ -104,9 +104,9 @@ function ExerciseForm({ onAdd, exerciseBank }: { onAdd: (ex: Exercise) => void; 
 }
 
 export default function CreatePlanPage() {
-  const { state, dispatch } = useWorkout();
+  const { dispatchPlans } = usePlans();
+  const { exerciseBank } = useBank();
   const navigate = useNavigate();
-  const exerciseBank = state.exerciseBank || [];
 
   const [planName, setPlanName] = useState('');
   const [workouts, setWorkouts] = useState<TempWorkout[]>([]);
@@ -165,7 +165,7 @@ export default function CreatePlanPage() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!planName.trim() || workouts.length === 0 || totalExercises === 0) return;
-    dispatch({
+    dispatchPlans({
       type: 'ADD_PLAN',
       payload: {
         name: planName.trim(),

@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useWorkout } from '../context/WorkoutContext';
+import { usePlans, useHistory } from '../context/AppProvider';
 import RestTimer from '../components/RestTimer';
 import { InstructionsToggle, hasInstructions } from '../components/ExerciseInstructions';
 import type { Instructions, HistorySet } from '../types';
@@ -47,11 +47,12 @@ function clearSession(): void {
 
 export default function WorkoutSessionPage() {
   const { planId, workoutId } = useParams();
-  const { state, dispatch } = useWorkout();
+  const { plans } = usePlans();
+  const { history, dispatchHistory } = useHistory();
   const navigate = useNavigate();
   const [finished, setFinished] = useState(false);
 
-  const plan = state.plans.find(p => p.id === planId);
+  const plan = plans.find(p => p.id === planId);
   const workout = plan?.workouts.find(w => w.id === workoutId);
 
   const saved = useRef<SavedSession | null>(loadSession());
@@ -60,7 +61,7 @@ export default function WorkoutSessionPage() {
 
   // Find last logged workout for this exercise to pre-fill weights (ID primary, name fallback)
   const getLastWeight = (exerciseId: string, exerciseName: string): HistorySet[] | null => {
-    for (const entry of state.history) {
+    for (const entry of history) {
       const found = entry.exercises.find(e => e.exerciseId === exerciseId) ||
                     entry.exercises.find(e => e.name === exerciseName);
       if (found) {
@@ -143,7 +144,7 @@ export default function WorkoutSessionPage() {
 
   const finishWorkout = () => {
     const duration = Math.round((Date.now() - startTimeRef.current) / 1000);
-    dispatch({
+    dispatchHistory({
       type: 'LOG_WORKOUT',
       payload: {
         planId: plan.id,

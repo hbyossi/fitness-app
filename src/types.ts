@@ -67,15 +67,21 @@ export interface AppState {
   exerciseBank: BankExercise[];
 }
 
-export type Action =
+export type PlanAction =
   | { type: 'ADD_PLAN'; payload: { name: string; workouts: Omit<Workout, 'id'>[] } }
   | { type: 'UPDATE_PLAN'; payload: Partial<Plan> & { id: string } }
   | { type: 'DELETE_PLAN'; payload: string }
   | { type: 'DUPLICATE_PLAN'; payload: string }
   | { type: 'ADD_EXERCISE'; payload: { planId: string; workoutId: string; exercise: Omit<Exercise, 'id'> } }
+  | { type: 'IMPORT_PLANS'; payload: Plan[] };
+
+export type HistoryAction =
   | { type: 'LOG_WORKOUT'; payload: { planId: string; planName: string; workoutName: string; exercises: HistoryExercise[]; duration: number } }
   | { type: 'DELETE_HISTORY'; payload: string }
+  | { type: 'IMPORT_HISTORY'; payload: HistoryEntry[] };
+
+export type BankAction =
   | { type: 'ADD_BANK_EXERCISE'; payload: Omit<BankExercise, 'id'> }
   | { type: 'UPDATE_BANK_EXERCISE'; payload: Partial<BankExercise> & { id: string } }
   | { type: 'DELETE_BANK_EXERCISE'; payload: string }
-  | { type: 'IMPORT_DATA'; payload: AppState };
+  | { type: 'IMPORT_BANK'; payload: BankExercise[] };
