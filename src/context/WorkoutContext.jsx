@@ -84,6 +84,13 @@ function reducer(state, action) {
     case 'DELETE_BANK_EXERCISE': {
       return { ...state, exerciseBank: state.exerciseBank.filter(e => e.id !== action.payload) };
     }
+    case 'IMPORT_DATA': {
+      return {
+        plans: action.payload.plans || [],
+        history: action.payload.history || [],
+        exerciseBank: action.payload.exerciseBank || []
+      };
+    }
     default:
       return state;
   }

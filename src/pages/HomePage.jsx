@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useWorkout } from '../context/WorkoutContext';
 import ConfirmDialog from '../components/ConfirmDialog';
 import { InstructionsFields, normalizeInstructions } from '../components/ExerciseInstructions';
+import { exportData, validateImportData } from '../utils/storage';
 
 function AddExerciseForm({ onAdd, onCancel, exerciseBank }) {
   const [name, setName] = useState('');
@@ -89,6 +90,29 @@ export default function HomePage() {
   const [deleteId, setDeleteId] = useState(null);
   const [addingExercise, setAddingExercise] = useState(null); // { planId, workoutId }
   const [expandedPlan, setExpandedPlan] = useState(null);
+  const fileInputRef = useRef(null);
+
+  const handleImport = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      try {
+        const data = JSON.parse(evt.target.result);
+        if (!validateImportData(data)) {
+          alert('קובץ הגיבוי לא תקין. ודא שזהו קובץ JSON שיוצא מהאפליקציה.');
+          return;
+        }
+        if (!window.confirm(`ייבוא יחליף את כל הנתונים הנוכחיים. נמצאו ${data.plans.length} תוכניות, ${data.history.length} אימונים ו-${data.exerciseBank.length} תרגילים במאגר. להמשיך?`)) return;
+        dispatch({ type: 'IMPORT_DATA', payload: data });
+        alert('הנתונים יובאו בהצלחה! ✅');
+      } catch {
+        alert('שגיאה בקריאת הקובץ. ודא שזהו קובץ JSON תקין.');
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  };
 
   const handleAddExercise = (exercise) => {
     dispatch({
@@ -220,6 +244,27 @@ export default function HomePage() {
           </div>
         ))
       )}
+
+      {/* Data Management */}
+      <div className="card" style={{ marginTop: '1rem', border: '1px dashed var(--border)' }}>
+        <div className="card-title" style={{ marginBottom: '0.6rem' }}>💾 גיבוי ושחזור</div>
+        <div className="card-subtitle" style={{ marginBottom: '0.8rem' }}>ייצא את כל הנתונים לקובץ גיבוי, או ייבא גיבוי קיים</div>
+        <div style={{ display: 'flex', gap: '0.5rem' }}>
+          <button className="btn btn-primary" style={{ flex: 1 }} onClick={exportData}>
+            📤 ייצוא גיבוי
+          </button>
+          <button className="btn btn-ghost" style={{ flex: 1, border: '1px solid var(--border)' }} onClick={() => fileInputRef.current?.click()}>
+            📥 ייבוא גיבוי
+          </button>
+        </div>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".json"
+          style={{ display: 'none' }}
+          onChange={handleImport}
+        />
+      </div>
 
       {deleteId && (
         <ConfirmDialog
