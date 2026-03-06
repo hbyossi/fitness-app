@@ -26,6 +26,20 @@ function reducer(state, action) {
     case 'DELETE_PLAN': {
       return { ...state, plans: state.plans.filter(p => p.id !== action.payload) };
     }
+    case 'ADD_EXERCISE': {
+      const { planId, workoutId, exercise } = action.payload;
+      const plans = state.plans.map(p => {
+        if (p.id !== planId) return p;
+        return {
+          ...p,
+          workouts: p.workouts.map(w => {
+            if (w.id !== workoutId) return w;
+            return { ...w, exercises: [...w.exercises, { ...exercise, id: generateId() }] };
+          })
+        };
+      });
+      return { ...state, plans };
+    }
     case 'LOG_WORKOUT': {
       const entry = {
         id: generateId(),
