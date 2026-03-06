@@ -1,7 +1,7 @@
 import type { AppState } from '../types';
 
 const STORAGE_KEY = 'fitness_app_data';
-const CURRENT_VERSION = 2;
+const CURRENT_VERSION = 3;
 
 const emptyState: AppState = { _version: CURRENT_VERSION, plans: [], history: [], exerciseBank: [] };
 
@@ -34,7 +34,9 @@ const migrations: Migration[] = [
     }
     if (!Array.isArray(data.history)) data.history = [];
     return data;
-  }
+  },
+  // v2 → v3: no structural change — marks version as ID-linked-aware
+  (data) => data
 ];
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

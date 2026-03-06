@@ -58,10 +58,11 @@ export default function WorkoutSessionPage() {
   const isResume = saved.current?.planId === planId && saved.current?.workoutId === workoutId;
   const startTimeRef = useRef(isResume ? saved.current!.startTime : Date.now());
 
-  // Find last logged workout for this exercise to pre-fill weights
-  const getLastWeight = (exerciseName: string): HistorySet[] | null => {
+  // Find last logged workout for this exercise to pre-fill weights (ID primary, name fallback)
+  const getLastWeight = (exerciseId: string, exerciseName: string): HistorySet[] | null => {
     for (const entry of state.history) {
-      const found = entry.exercises.find(e => e.name === exerciseName);
+      const found = entry.exercises.find(e => e.exerciseId === exerciseId) ||
+                    entry.exercises.find(e => e.name === exerciseName);
       if (found) {
         const doneSets = found.sets.filter(s => s.done);
         if (doneSets.length > 0) return doneSets;
@@ -75,7 +76,7 @@ export default function WorkoutSessionPage() {
     if (isResume) return saved.current!.session;
     if (!workout) return [];
     return workout.exercises.map(ex => {
-      const lastSets = getLastWeight(ex.name);
+      const lastSets = getLastWeight(ex.id, ex.name);
       return {
         exerciseId: ex.id,
         name: ex.name,
@@ -149,6 +150,7 @@ export default function WorkoutSessionPage() {
         planName: plan.name,
         workoutName: workout.name,
         exercises: session.map(ex => ({
+          exerciseId: ex.exerciseId,
           name: ex.name,
           sets: ex.sets.map(s => ({
             weight: s.weight,
@@ -161,7 +163,7 @@ export default function WorkoutSessionPage() {
     });
     setFinished(true);
     clearSession();
-    navigate('/summary', { state: { summary: { workoutName: workout.name, planName: plan.name, exercises: session.map(ex => ({ name: ex.name, sets: ex.sets.map(s => ({ weight: s.weight, reps: s.reps, done: s.done })) })), duration } } });
+    navigate('/summary', { state: { summary: { workoutName: workout.name, planName: plan.name, exercises: session.map(ex => ({ exerciseId: ex.exerciseId, name: ex.name, sets: ex.sets.map(s => ({ weight: s.weight, reps: s.reps, done: s.done })) })), duration } } });
   };
 
   const handleQuit = () => {

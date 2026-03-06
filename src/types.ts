@@ -36,6 +36,7 @@ export interface HistorySet {
 }
 
 export interface HistoryExercise {
+  exerciseId?: string;
   name: string;
   sets: HistorySet[];
 }
