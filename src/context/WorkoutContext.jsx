@@ -55,6 +55,19 @@ function reducer(state, action) {
     case 'DELETE_HISTORY': {
       return { ...state, history: state.history.filter(h => h.id !== action.payload) };
     }
+    case 'ADD_BANK_EXERCISE': {
+      const bankEx = { ...action.payload, id: generateId() };
+      return { ...state, exerciseBank: [...state.exerciseBank, bankEx] };
+    }
+    case 'UPDATE_BANK_EXERCISE': {
+      const bank = state.exerciseBank.map(e =>
+        e.id === action.payload.id ? { ...e, ...action.payload } : e
+      );
+      return { ...state, exerciseBank: bank };
+    }
+    case 'DELETE_BANK_EXERCISE': {
+      return { ...state, exerciseBank: state.exerciseBank.filter(e => e.id !== action.payload) };
+    }
     default:
       return state;
   }

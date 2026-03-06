@@ -3,12 +3,21 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useWorkout } from '../context/WorkoutContext';
 import { MUSCLE_GROUPS, generateId } from '../utils/helpers';
 
-function ExerciseForm({ onAdd }) {
+function ExerciseForm({ onAdd, exerciseBank }) {
   const [exName, setExName] = useState('');
   const [exSets, setExSets] = useState('3');
   const [exReps, setExReps] = useState('12');
   const [exWeight, setExWeight] = useState('');
   const [exInstructions, setExInstructions] = useState('');
+
+  const pickFromBank = (id) => {
+    const ex = exerciseBank.find(e => e.id === id);
+    if (!ex) return;
+    setExName(ex.name);
+    setExInstructions(ex.instructions || '');
+    setExSets(String(ex.defaultSets || 3));
+    setExReps(String(ex.defaultReps || 12));
+  };
 
   const handleAdd = () => {
     if (!exName.trim()) return;
@@ -27,6 +36,15 @@ function ExerciseForm({ onAdd }) {
 
   return (
     <div style={{ marginTop: '0.5rem' }}>
+      {exerciseBank.length > 0 && (
+        <div className="form-group">
+          <label className="form-label">בחר מהמאגר</label>
+          <select className="form-select" onChange={e => pickFromBank(e.target.value)} value="">
+            <option value="">בחר תרגיל...</option>
+            {exerciseBank.map(ex => <option key={ex.id} value={ex.id}>{ex.name} ({ex.muscleGroup})</option>)}
+          </select>
+        </div>
+      )}
       <div className="form-group">
         <input className="form-input" value={exName} onChange={e => setExName(e.target.value)} placeholder="שם התרגיל" />
       </div>
@@ -65,6 +83,7 @@ export default function EditPlanPage() {
   const navigate = useNavigate();
 
   const plan = state.plans.find(p => p.id === planId);
+  const exerciseBank = state.exerciseBank || [];
 
   const [planName, setPlanName] = useState(plan?.name || '');
   const [workouts, setWorkouts] = useState(() =>
@@ -175,7 +194,7 @@ export default function EditPlanPage() {
             ))}
 
             {editingWorkoutIdx === wIdx && (
-              <ExerciseForm onAdd={(ex) => addExerciseToWorkout(wIdx, ex)} />
+              <ExerciseForm onAdd={(ex) => addExerciseToWorkout(wIdx, ex)} exerciseBank={exerciseBank} />
             )}
           </div>
         ))}

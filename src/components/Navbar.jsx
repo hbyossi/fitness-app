@@ -13,6 +13,10 @@ export default function Navbar() {
           <span className="nav-icon">➕</span>
           <span>תוכנית חדשה</span>
         </NavLink>
+        <NavLink to="/bank" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
+          <span className="nav-icon">📚</span>
+          <span>מאגר תרגילים</span>
+        </NavLink>
         <NavLink to="/history" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
           <span className="nav-icon">📊</span>
           <span>היסטוריה</span>

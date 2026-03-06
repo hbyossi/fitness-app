@@ -3,12 +3,23 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useWorkout } from '../context/WorkoutContext';
 import ConfirmDialog from '../components/ConfirmDialog';
 
-function AddExerciseForm({ onAdd, onCancel }) {
+function AddExerciseForm({ onAdd, onCancel, exerciseBank }) {
   const [name, setName] = useState('');
   const [sets, setSets] = useState('3');
   const [reps, setReps] = useState('12');
   const [weight, setWeight] = useState('');
   const [instructions, setInstructions] = useState('');
+
+  const handlePickFromBank = (id) => {
+    if (!id) return;
+    const ex = exerciseBank.find(e => e.id === id);
+    if (ex) {
+      setName(ex.name);
+      setInstructions(ex.instructions || '');
+      if (ex.defaultSets) setSets(String(ex.defaultSets));
+      if (ex.defaultReps) setReps(String(ex.defaultReps));
+    }
+  };
 
   const handleSubmit = () => {
     if (!name.trim()) return;
@@ -23,6 +34,15 @@ function AddExerciseForm({ onAdd, onCancel }) {
 
   return (
     <div style={{ marginTop: '0.5rem', padding: '0.6rem', background: 'var(--bg-card)', borderRadius: 8 }}>
+      {exerciseBank.length > 0 && (
+        <div className="form-group">
+          <label className="form-label">בחר מהמאגר</label>
+          <select className="form-select" defaultValue="" onChange={e => handlePickFromBank(e.target.value)}>
+            <option value="">-- בחירה חופשית --</option>
+            {exerciseBank.map(ex => <option key={ex.id} value={ex.id}>{ex.name} ({ex.muscleGroup})</option>)}
+          </select>
+        </div>
+      )}
       <div className="form-group">
         <input className="form-input" value={name} onChange={e => setName(e.target.value)} placeholder="שם התרגיל" />
       </div>
@@ -161,6 +181,7 @@ export default function HomePage() {
                     <AddExerciseForm
                       onAdd={handleAddExercise}
                       onCancel={() => setAddingExercise(null)}
+                      exerciseBank={state.exerciseBank || []}
                     />
                   )}
                 </React.Fragment>
