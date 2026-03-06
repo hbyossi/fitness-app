@@ -267,6 +267,14 @@ body {
   gap: 0.3rem;
 }
 
+/* ── Exercise Instructions ── */
+.exercise-instructions {
+  font-size: 0.8rem;
+  color: var(--warning);
+  margin-top: 0.2rem;
+  line-height: 1.4;
+}
+
 /* ── Workout Session ── */
 .set-row {
   display: grid;

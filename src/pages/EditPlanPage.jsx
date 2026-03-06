@@ -8,6 +8,7 @@ function ExerciseForm({ onAdd }) {
   const [exSets, setExSets] = useState('3');
   const [exReps, setExReps] = useState('12');
   const [exWeight, setExWeight] = useState('');
+  const [exInstructions, setExInstructions] = useState('');
 
   const handleAdd = () => {
     if (!exName.trim()) return;
@@ -16,10 +17,12 @@ function ExerciseForm({ onAdd }) {
       name: exName.trim(),
       sets: parseInt(exSets) || 3,
       reps: parseInt(exReps) || 12,
-      weight: parseFloat(exWeight) || 0
+      weight: parseFloat(exWeight) || 0,
+      instructions: exInstructions.trim()
     });
     setExName('');
     setExWeight('');
+    setExInstructions('');
   };
 
   return (
@@ -40,6 +43,16 @@ function ExerciseForm({ onAdd }) {
           <label className="form-label">משקל (ק&quot;ג)</label>
           <input className="form-input" type="number" min="0" step="0.5" value={exWeight} onChange={e => setExWeight(e.target.value)} placeholder="0" />
         </div>
+      </div>
+      <div className="form-group">
+        <label className="form-label">הוראות ביצוע</label>
+        <textarea
+          className="form-input"
+          value={exInstructions}
+          onChange={e => setExInstructions(e.target.value)}
+          placeholder="לדוגמה: לשמור על גב ישר, לרדת לאט..."
+          rows={2}
+        />
       </div>
       <button type="button" className="btn btn-primary btn-full" onClick={handleAdd}>➕ הוסף תרגיל</button>
     </div>
@@ -155,6 +168,7 @@ export default function EditPlanPage() {
                   <div className="exercise-detail">
                     {ex.sets} סטים × {ex.reps} חזרות{ex.weight > 0 && ` · ${ex.weight} ק"ג`}
                   </div>
+                  {ex.instructions && <div className="exercise-instructions">📋 {ex.instructions}</div>}
                 </div>
                 <button type="button" className="btn btn-danger" onClick={() => removeExercise(wIdx, ex.id)}>הסר</button>
               </div>

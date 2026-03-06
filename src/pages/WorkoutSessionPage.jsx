@@ -18,6 +18,7 @@ export default function WorkoutSessionPage() {
     return workout.exercises.map(ex => ({
       exerciseId: ex.id,
       name: ex.name,
+      instructions: ex.instructions || '',
       sets: Array.from({ length: ex.sets }, (_, i) => ({
         setNum: i + 1,
         weight: ex.weight || 0,
@@ -135,7 +136,10 @@ export default function WorkoutSessionPage() {
       {/* Current exercise sets */}
       {currentEx && (
         <div className="card">
-          <div className="card-title" style={{ marginBottom: '0.6rem' }}>{currentEx.name}</div>
+          <div className="card-title" style={{ marginBottom: '0.3rem' }}>{currentEx.name}</div>
+          {currentEx.instructions && (
+            <div className="exercise-instructions" style={{ marginBottom: '0.6rem' }}>📋 {currentEx.instructions}</div>
+          )}
 
           <div className="set-row" style={{ color: 'var(--text-muted)', fontSize: '0.8rem', borderBottom: '1px solid var(--border)' }}>
             <span className="set-number">סט</span>

@@ -8,6 +8,7 @@ function AddExerciseForm({ onAdd, onCancel }) {
   const [sets, setSets] = useState('3');
   const [reps, setReps] = useState('12');
   const [weight, setWeight] = useState('');
+  const [instructions, setInstructions] = useState('');
 
   const handleSubmit = () => {
     if (!name.trim()) return;
@@ -15,7 +16,8 @@ function AddExerciseForm({ onAdd, onCancel }) {
       name: name.trim(),
       sets: parseInt(sets) || 3,
       reps: parseInt(reps) || 12,
-      weight: parseFloat(weight) || 0
+      weight: parseFloat(weight) || 0,
+      instructions: instructions.trim()
     });
   };
 
@@ -37,6 +39,16 @@ function AddExerciseForm({ onAdd, onCancel }) {
           <label className="form-label">משקל (ק&quot;ג)</label>
           <input className="form-input" type="number" min="0" step="0.5" value={weight} onChange={e => setWeight(e.target.value)} placeholder="0" />
         </div>
+      </div>
+      <div className="form-group">
+        <label className="form-label">הוראות ביצוע</label>
+        <textarea
+          className="form-input"
+          value={instructions}
+          onChange={e => setInstructions(e.target.value)}
+          placeholder="לדוגמה: לשמור על גב ישר, לרדת לאט..."
+          rows={2}
+        />
       </div>
       <div style={{ display: 'flex', gap: '0.4rem' }}>
         <button type="button" className="btn btn-success" style={{ flex: 1 }} onClick={handleSubmit}>✅ הוסף</button>
