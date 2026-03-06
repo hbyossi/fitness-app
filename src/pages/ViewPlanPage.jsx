@@ -1,11 +1,12 @@
 import React from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useWorkout } from '../context/WorkoutContext';
 import { InstructionsToggle, hasInstructions } from '../components/ExerciseInstructions';
 
 export default function ViewPlanPage() {
   const { planId } = useParams();
   const { state } = useWorkout();
+  const navigate = useNavigate();
   const plan = state.plans.find(p => p.id === planId);
 
   if (!plan) {
@@ -22,9 +23,12 @@ export default function ViewPlanPage() {
   return (
     <div>
       <div className="page-header">
-        <div>
-          <h1 className="page-title">{plan.name}</h1>
-          <div className="card-subtitle">{plan.workouts.length} אימונים · {totalExercises} תרגילים</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <button className="btn btn-ghost" onClick={() => navigate('/')}>← חזרה</button>
+          <div>
+            <h1 className="page-title">{plan.name}</h1>
+            <div className="card-subtitle">{plan.workouts.length} אימונים · {totalExercises} תרגילים</div>
+          </div>
         </div>
         <Link to={`/edit/${plan.id}`} className="btn btn-ghost" title="ערוך">✏️</Link>
       </div>

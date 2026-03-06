@@ -26,6 +26,22 @@ function reducer(state, action) {
     case 'DELETE_PLAN': {
       return { ...state, plans: state.plans.filter(p => p.id !== action.payload) };
     }
+    case 'DUPLICATE_PLAN': {
+      const source = state.plans.find(p => p.id === action.payload);
+      if (!source) return state;
+      const dup = {
+        ...source,
+        id: generateId(),
+        name: source.name + ' (עותק)',
+        createdAt: new Date().toISOString(),
+        workouts: source.workouts.map(w => ({
+          ...w,
+          id: generateId(),
+          exercises: w.exercises.map(e => ({ ...e, id: generateId() }))
+        }))
+      };
+      return { ...state, plans: [...state.plans, dup] };
+    }
     case 'ADD_EXERCISE': {
       const { planId, workoutId, exercise } = action.payload;
       const plans = state.plans.map(p => {

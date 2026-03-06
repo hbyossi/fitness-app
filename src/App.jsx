@@ -9,6 +9,7 @@ import ViewPlanPage from './pages/ViewPlanPage';
 import WorkoutSessionPage from './pages/WorkoutSessionPage';
 import HistoryPage from './pages/HistoryPage';
 import ExerciseBankPage from './pages/ExerciseBankPage';
+import WorkoutSummaryPage from './pages/WorkoutSummaryPage';
 
 export default function App() {
   return (
@@ -23,6 +24,7 @@ export default function App() {
               <Route path="/edit/:planId" element={<EditPlanPage />} />
               <Route path="/plan/:planId" element={<ViewPlanPage />} />
               <Route path="/workout/:planId/:workoutId" element={<WorkoutSessionPage />} />
+              <Route path="/summary" element={<WorkoutSummaryPage />} />
               <Route path="/history" element={<HistoryPage />} />
               <Route path="/bank" element={<ExerciseBankPage />} />
             </Routes>

@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useWorkout } from '../context/WorkoutContext';
 import RestTimer from '../components/RestTimer';
@@ -8,28 +8,53 @@ export default function WorkoutSessionPage() {
   const { planId, workoutId } = useParams();
   const { state, dispatch } = useWorkout();
   const navigate = useNavigate();
+  const [finished, setFinished] = useState(false);
 
   const plan = state.plans.find(p => p.id === planId);
   const workout = plan?.workouts.find(w => w.id === workoutId);
   const startTimeRef = useRef(Date.now());
 
+  // Find last logged workout for this exercise to pre-fill weights
+  const getLastWeight = (exerciseName) => {
+    for (const entry of state.history) {
+      const found = entry.exercises.find(e => e.name === exerciseName);
+      if (found) {
+        const doneSets = found.sets.filter(s => s.done);
+        if (doneSets.length > 0) return doneSets;
+      }
+    }
+    return null;
+  };
+
   // Build session state: each exercise has sets with weight/reps/done
   const [session, setSession] = useState(() => {
     if (!workout) return [];
-    return workout.exercises.map(ex => ({
-      exerciseId: ex.id,
-      name: ex.name,
-      instructions: ex.instructions || '',
-      sets: Array.from({ length: ex.sets }, (_, i) => ({
-        setNum: i + 1,
-        weight: ex.weight || 0,
-        reps: ex.reps,
-        done: false
-      }))
-    }));
+    return workout.exercises.map(ex => {
+      const lastSets = getLastWeight(ex.name);
+      return {
+        exerciseId: ex.id,
+        name: ex.name,
+        instructions: ex.instructions || '',
+        restTime: ex.restTime || 90,
+        sets: Array.from({ length: ex.sets }, (_, i) => ({
+          setNum: i + 1,
+          weight: lastSets?.[i]?.weight ?? (ex.weight || 0),
+          reps: lastSets?.[i]?.reps ?? ex.reps,
+          done: false
+        }))
+      };
+    });
   });
 
   const [currentExIndex, setCurrentExIndex] = useState(0);
+
+  // Prevent accidental page close/refresh during workout
+  useEffect(() => {
+    if (finished) return;
+    const handler = (e) => { e.preventDefault(); };
+    window.addEventListener('beforeunload', handler);
+    return () => window.removeEventListener('beforeunload', handler);
+  }, [finished]);
 
   if (!plan || !workout) {
     return (
@@ -52,6 +77,10 @@ export default function WorkoutSessionPage() {
     setSession(prev => {
       const copy = prev.map(ex => ({ ...ex, sets: ex.sets.map(s => ({ ...s })) }));
       copy[exIdx].sets[setIdx].done = !copy[exIdx].sets[setIdx].done;
+      // Auto-advance to next exercise if all sets done
+      if (copy[exIdx].sets.every(s => s.done) && exIdx < copy.length - 1) {
+        setTimeout(() => setCurrentExIndex(exIdx + 1), 400);
+      }
       return copy;
     });
   };
@@ -79,7 +108,16 @@ export default function WorkoutSessionPage() {
         duration
       }
     });
-    navigate('/history');
+    setFinished(true);
+    navigate('/summary', { state: { summary: { workoutName: workout.name, planName: plan.name, exercises: session.map(ex => ({ name: ex.name, sets: ex.sets.map(s => ({ weight: s.weight, reps: s.reps, done: s.done })) })), duration } } });
+  };
+
+  const handleQuit = () => {
+    if (completedSets > 0) {
+      if (!window.confirm('יש סטים שהושלמו. לצאת מהאימון בלי לשמור?')) return;
+    }
+    setFinished(true);
+    navigate('/');
   };
 
   const currentEx = session[currentExIndex];
@@ -87,9 +125,12 @@ export default function WorkoutSessionPage() {
   return (
     <div>
       <div className="page-header">
-        <div>
-          <h1 className="page-title">{workout.name}</h1>
-          <div className="card-subtitle">{plan.name}</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <button className="btn btn-ghost" onClick={handleQuit} title="יציאה">✕</button>
+          <div>
+            <h1 className="page-title">{workout.name}</h1>
+            <div className="card-subtitle">{plan.name}</div>
+          </div>
         </div>
         <span className="badge badge-primary">{progress}%</span>
       </div>
@@ -196,7 +237,7 @@ export default function WorkoutSessionPage() {
         </div>
       )}
 
-      <RestTimer />
+      <RestTimer defaultSeconds={currentEx?.restTime || 90} />
 
       <button
         className="btn btn-success btn-full"

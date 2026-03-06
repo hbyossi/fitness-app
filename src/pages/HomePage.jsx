@@ -10,6 +10,7 @@ function AddExerciseForm({ onAdd, onCancel, exerciseBank }) {
   const [reps, setReps] = useState('12');
   const [weight, setWeight] = useState('');
   const [instructions, setInstructions] = useState({ startingPosition: '', execution: '', tempo: '', notes: '' });
+  const [bankSearch, setBankSearch] = useState('');
 
   const handlePickFromBank = (id) => {
     if (!id) return;
@@ -19,8 +20,13 @@ function AddExerciseForm({ onAdd, onCancel, exerciseBank }) {
       setInstructions(normalizeInstructions(ex.instructions));
       if (ex.defaultSets) setSets(String(ex.defaultSets));
       if (ex.defaultReps) setReps(String(ex.defaultReps));
+      setBankSearch('');
     }
   };
+
+  const filteredBank = bankSearch
+    ? exerciseBank.filter(ex => ex.name.includes(bankSearch) || ex.muscleGroup.includes(bankSearch))
+    : exerciseBank;
 
   const handleSubmit = () => {
     if (!name.trim()) return;
@@ -38,9 +44,16 @@ function AddExerciseForm({ onAdd, onCancel, exerciseBank }) {
       {exerciseBank.length > 0 && (
         <div className="form-group">
           <label className="form-label">בחר מהמאגר</label>
+          <input
+            className="form-input"
+            value={bankSearch}
+            onChange={e => setBankSearch(e.target.value)}
+            placeholder="חפש תרגיל..."
+            style={{ marginBottom: '0.3rem' }}
+          />
           <select className="form-select" defaultValue="" onChange={e => handlePickFromBank(e.target.value)}>
             <option value="">-- בחירה חופשית --</option>
-            {exerciseBank.map(ex => <option key={ex.id} value={ex.id}>{ex.name} ({ex.muscleGroup})</option>)}
+            {filteredBank.map(ex => <option key={ex.id} value={ex.id}>{ex.name} ({ex.muscleGroup})</option>)}
           </select>
         </div>
       )}
@@ -75,6 +88,7 @@ export default function HomePage() {
   const navigate = useNavigate();
   const [deleteId, setDeleteId] = useState(null);
   const [addingExercise, setAddingExercise] = useState(null); // { planId, workoutId }
+  const [expandedPlan, setExpandedPlan] = useState(null);
 
   const handleAddExercise = (exercise) => {
     dispatch({
@@ -122,6 +136,13 @@ export default function HomePage() {
                 </button>
                 <button
                   className="btn btn-ghost"
+                  onClick={() => dispatch({ type: 'DUPLICATE_PLAN', payload: plan.id })}
+                  title="שכפל"
+                >
+                  📋
+                </button>
+                <button
+                  className="btn btn-ghost"
                   onClick={() => navigate(`/edit/${plan.id}`)}
                   title="ערוך"
                 >
@@ -138,7 +159,16 @@ export default function HomePage() {
             </div>
 
             {/* List workouts inside the plan */}
-            <div style={{ marginTop: '0.4rem' }}>
+            <div
+              style={{ marginTop: '0.4rem', cursor: 'pointer' }}
+              onClick={() => setExpandedPlan(expandedPlan === plan.id ? null : plan.id)}
+            >
+              <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', padding: '0.3rem 0' }}>
+                {expandedPlan === plan.id ? '▲ הסתר אימונים' : '▼ הצג אימונים (' + plan.workouts.length + ')'}
+              </div>
+            </div>
+            {expandedPlan === plan.id && (
+            <div>
               {plan.workouts.map(workout => (
                 <React.Fragment key={workout.id}>
                   <div style={{
@@ -186,6 +216,7 @@ export default function HomePage() {
                 </React.Fragment>
               ))}
             </div>
+            )}
           </div>
         ))
       )}

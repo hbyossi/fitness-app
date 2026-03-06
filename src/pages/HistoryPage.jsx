@@ -12,6 +12,15 @@ export default function HistoryPage() {
     setDeleteId(null);
   };
 
+  // Weekly stats
+  const now = new Date();
+  const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+  const thisWeek = state.history.filter(e => new Date(e.date) >= weekAgo);
+  const weeklyVolume = thisWeek.reduce((acc, entry) =>
+    acc + entry.exercises.reduce((a, ex) =>
+      a + ex.sets.filter(s => s.done).reduce((s, set) => s + set.weight * set.reps, 0), 0), 0
+  );
+
   // Group by date
   const grouped = {};
   state.history.forEach(entry => {
@@ -26,6 +35,19 @@ export default function HistoryPage() {
         <h1 className="page-title">היסטוריית אימונים</h1>
         <span className="badge badge-primary">{state.history.length} אימונים</span>
       </div>
+
+      {state.history.length > 0 && (
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.6rem', marginBottom: '1rem' }}>
+          <div className="card" style={{ textAlign: 'center', marginBottom: 0 }}>
+            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>🏋️ אימונים השבוע</div>
+            <div style={{ fontSize: '1.3rem', fontWeight: 700, color: 'var(--primary-light)' }}>{thisWeek.length}</div>
+          </div>
+          <div className="card" style={{ textAlign: 'center', marginBottom: 0 }}>
+            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>📊 נפח שבועי</div>
+            <div style={{ fontSize: '1.3rem', fontWeight: 700, color: 'var(--warning)' }}>{weeklyVolume.toLocaleString()} ק"ג</div>
+          </div>
+        </div>
+      )}
 
       {state.history.length === 0 ? (
         <div className="empty-state">
@@ -51,6 +73,9 @@ export default function HistoryPage() {
                       <div className="card-title">{entry.workoutName || entry.planName}</div>
                       <div className="card-subtitle">
                         {entry.planName} · {completedSets}/{totalSets} סטים · {formatTime(entry.duration)}
+                      </div>
+                      <div className="card-subtitle" style={{ color: 'var(--warning)' }}>
+                        נפח: {entry.exercises.reduce((a, ex) => a + ex.sets.filter(s => s.done).reduce((s, set) => s + set.weight * set.reps, 0), 0).toLocaleString()} ק"ג
                       </div>
                     </div>
                     <button className="btn btn-ghost" onClick={() => setDeleteId(entry.id)}>🗑️</button>

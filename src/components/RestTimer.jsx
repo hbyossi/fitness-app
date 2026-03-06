@@ -6,6 +6,13 @@ export default function RestTimer({ defaultSeconds = 90 }) {
   const [running, setRunning] = useState(false);
   const intervalRef = useRef(null);
 
+  // Reset when defaultSeconds changes (exercise switch)
+  useEffect(() => {
+    if (!running) {
+      setSeconds(defaultSeconds);
+    }
+  }, [defaultSeconds]);
+
   const stop = useCallback(() => {
     setRunning(false);
     if (intervalRef.current) clearInterval(intervalRef.current);

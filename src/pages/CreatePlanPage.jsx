@@ -10,7 +10,9 @@ function ExerciseForm({ onAdd, exerciseBank }) {
   const [exSets, setExSets] = useState('3');
   const [exReps, setExReps] = useState('12');
   const [exWeight, setExWeight] = useState('');
+  const [exRestTime, setExRestTime] = useState('90');
   const [exInstructions, setExInstructions] = useState({ startingPosition: '', execution: '', tempo: '', notes: '' });
+  const [bankSearch, setBankSearch] = useState('');
 
   const pickFromBank = (id) => {
     const ex = exerciseBank.find(e => e.id === id);
@@ -19,7 +21,12 @@ function ExerciseForm({ onAdd, exerciseBank }) {
     setExInstructions(normalizeInstructions(ex.instructions));
     setExSets(String(ex.defaultSets || 3));
     setExReps(String(ex.defaultReps || 12));
+    setBankSearch('');
   };
+
+  const filteredBank = bankSearch
+    ? exerciseBank.filter(ex => ex.name.includes(bankSearch) || ex.muscleGroup.includes(bankSearch))
+    : exerciseBank;
 
   const handleAdd = () => {
     if (!exName.trim()) return;
@@ -29,10 +36,12 @@ function ExerciseForm({ onAdd, exerciseBank }) {
       sets: parseInt(exSets) || 3,
       reps: parseInt(exReps) || 12,
       weight: parseFloat(exWeight) || 0,
+      restTime: parseInt(exRestTime) || 90,
       instructions: exInstructions
     });
     setExName('');
     setExWeight('');
+    setExRestTime('90');
     setExInstructions({ startingPosition: '', execution: '', tempo: '', notes: '' });
   };
 
@@ -41,9 +50,16 @@ function ExerciseForm({ onAdd, exerciseBank }) {
       {exerciseBank.length > 0 && (
         <div className="form-group">
           <label className="form-label">בחר מהמאגר</label>
+          <input
+            className="form-input"
+            value={bankSearch}
+            onChange={e => setBankSearch(e.target.value)}
+            placeholder="חפש תרגיל..."
+            style={{ marginBottom: '0.3rem' }}
+          />
           <select className="form-select" onChange={e => pickFromBank(e.target.value)} value="">
             <option value="">בחר תרגיל...</option>
-            {exerciseBank.map(ex => <option key={ex.id} value={ex.id}>{ex.name} ({ex.muscleGroup})</option>)}
+            {filteredBank.map(ex => <option key={ex.id} value={ex.id}>{ex.name} ({ex.muscleGroup})</option>)}
           </select>
         </div>
       )}
@@ -68,8 +84,10 @@ function ExerciseForm({ onAdd, exerciseBank }) {
           <label className="form-label">משקל (ק&quot;ג)</label>
           <input className="form-input" type="number" min="0" step="0.5" value={exWeight} onChange={e => setExWeight(e.target.value)} placeholder="0" />
         </div>
-      </div>
-      <InstructionsFields value={exInstructions} onChange={setExInstructions} />
+      </div>      <div className="form-group">
+        <label className="form-label">⏱️ מנוחה (שניות)</label>
+        <input className="form-input" type="number" min="0" step="5" value={exRestTime} onChange={e => setExRestTime(e.target.value)} />
+      </div>      <InstructionsFields value={exInstructions} onChange={setExInstructions} />
       <button type="button" className="btn btn-primary btn-full" style={{ marginTop: '0.5rem' }} onClick={handleAdd}>
         ➕ הוסף תרגיל
       </button>
@@ -119,6 +137,12 @@ export default function CreatePlanPage() {
   const removeExercise = (wIdx, exId) => {
     setWorkouts(prev => prev.map((w, i) =>
       i === wIdx ? { ...w, exercises: w.exercises.filter(e => e.id !== exId) } : w
+    ));
+  };
+
+  const updateExercise = (wIdx, exId, updates) => {
+    setWorkouts(prev => prev.map((w, i) =>
+      i === wIdx ? { ...w, exercises: w.exercises.map(e => e.id === exId ? { ...e, ...updates } : e) } : w
     ));
   };
 
@@ -183,6 +207,7 @@ export default function CreatePlanPage() {
               exercises={w.exercises}
               onReorder={(newExercises) => reorderExercises(wIdx, newExercises)}
               onRemove={(exId) => removeExercise(wIdx, exId)}
+              onUpdate={(exId, updates) => updateExercise(wIdx, exId, updates)}
             />
 
             {/* Inline exercise form when expanded */}
