@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useWorkout } from '../context/WorkoutContext';
 import { MUSCLE_GROUPS, generateId } from '../utils/helpers';
 import { InstructionsFields, InstructionsToggle, hasInstructions, normalizeInstructions } from '../components/ExerciseInstructions';
+import SortableExerciseList from '../components/SortableExerciseList';
 
 function ExerciseForm({ onAdd, exerciseBank }) {
   const [exName, setExName] = useState('');
@@ -121,6 +122,12 @@ export default function CreatePlanPage() {
     ));
   };
 
+  const reorderExercises = (wIdx, newExercises) => {
+    setWorkouts(prev => prev.map((w, i) =>
+      i === wIdx ? { ...w, exercises: newExercises } : w
+    ));
+  };
+
   const totalExercises = workouts.reduce((sum, w) => sum + w.exercises.length, 0);
 
   const handleSubmit = (e) => {
@@ -172,19 +179,11 @@ export default function CreatePlanPage() {
               </div>
             </div>
 
-            {/* Exercise list */}
-            {w.exercises.map(ex => (
-              <div key={ex.id} className="exercise-item">
-                <div className="exercise-info">
-                  <div className="exercise-name">{ex.name}</div>
-                  <div className="exercise-detail">
-                    {ex.sets} סטים × {ex.reps} חזרות{ex.weight > 0 && ` · ${ex.weight} ק"ג`}
-                  </div>
-                  {hasInstructions(ex.instructions) && <InstructionsToggle instructions={ex.instructions} />}
-                </div>
-                <button type="button" className="btn btn-danger" onClick={() => removeExercise(wIdx, ex.id)}>הסר</button>
-              </div>
-            ))}
+            <SortableExerciseList
+              exercises={w.exercises}
+              onReorder={(newExercises) => reorderExercises(wIdx, newExercises)}
+              onRemove={(exId) => removeExercise(wIdx, exId)}
+            />
 
             {/* Inline exercise form when expanded */}
             {editingWorkoutIdx === wIdx && (
