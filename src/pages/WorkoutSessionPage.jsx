@@ -2,7 +2,7 @@ import React, { useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useWorkout } from '../context/WorkoutContext';
 import RestTimer from '../components/RestTimer';
-import { InstructionsDisplay, hasInstructions } from '../components/ExerciseInstructions';
+import { InstructionsToggle, hasInstructions } from '../components/ExerciseInstructions';
 
 export default function WorkoutSessionPage() {
   const { planId, workoutId } = useParams();
@@ -139,7 +139,7 @@ export default function WorkoutSessionPage() {
         <div className="card">
           <div className="card-title" style={{ marginBottom: '0.3rem' }}>{currentEx.name}</div>
           {hasInstructions(currentEx.instructions) && (
-            <div style={{ marginBottom: '0.6rem' }}><InstructionsDisplay instructions={currentEx.instructions} /></div>
+            <div style={{ marginBottom: '0.6rem' }}><InstructionsToggle instructions={currentEx.instructions} /></div>
           )}
 
           <div className="set-row" style={{ color: 'var(--text-muted)', fontSize: '0.8rem', borderBottom: '1px solid var(--border)' }}>

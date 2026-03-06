@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useWorkout } from '../context/WorkoutContext';
 import { MUSCLE_GROUPS } from '../utils/helpers';
 import ConfirmDialog from '../components/ConfirmDialog';
-import { InstructionsFields, InstructionsDisplay, normalizeInstructions, hasInstructions } from '../components/ExerciseInstructions';
+import { InstructionsFields, InstructionsToggle, normalizeInstructions, hasInstructions } from '../components/ExerciseInstructions';
 
 export default function ExerciseBankPage() {
   const { state, dispatch } = useWorkout();
@@ -199,7 +199,7 @@ export default function ExerciseBankPage() {
                 </div>
               </div>
               {hasInstructions(ex.instructions) && (
-                <div style={{ marginTop: '0.3rem' }}><InstructionsDisplay instructions={ex.instructions} /></div>
+                <div style={{ marginTop: '0.3rem' }}><InstructionsToggle instructions={ex.instructions} /></div>
               )}
             </>
           )}

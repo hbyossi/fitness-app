@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useWorkout } from '../context/WorkoutContext';
 import { MUSCLE_GROUPS, generateId } from '../utils/helpers';
-import { InstructionsFields, InstructionsDisplay, hasInstructions, normalizeInstructions } from '../components/ExerciseInstructions';
+import { InstructionsFields, InstructionsToggle, hasInstructions, normalizeInstructions } from '../components/ExerciseInstructions';
 
 function ExerciseForm({ onAdd, exerciseBank }) {
   const [exName, setExName] = useState('');
@@ -179,7 +179,7 @@ export default function EditPlanPage() {
                   <div className="exercise-detail">
                     {ex.sets} סטים × {ex.reps} חזרות{ex.weight > 0 && ` · ${ex.weight} ק"ג`}
                   </div>
-                  {hasInstructions(ex.instructions) && <InstructionsDisplay instructions={ex.instructions} />}
+                  {hasInstructions(ex.instructions) && <InstructionsToggle instructions={ex.instructions} />}
                 </div>
                 <button type="button" className="btn btn-danger" onClick={() => removeExercise(wIdx, ex.id)}>הסר</button>
               </div>

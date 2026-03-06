@@ -312,6 +312,17 @@ body {
   border-radius: 8px;
 }
 
+.instructions-link {
+  background: none;
+  border: none;
+  color: var(--primary-light);
+  font-size: 0.8rem;
+  cursor: pointer;
+  padding: 0.2rem 0;
+  text-decoration: underline;
+  font-family: inherit;
+}
+
 /* ── Workout Session ── */
 .set-row {
   display: grid;

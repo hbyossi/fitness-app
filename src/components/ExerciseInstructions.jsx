@@ -43,6 +43,24 @@ export function InstructionsDisplay({ instructions }) {
   );
 }
 
+export function InstructionsToggle({ instructions }) {
+  const [open, setOpen] = useState(false);
+  if (!hasInstructions(instructions)) return null;
+
+  return (
+    <div>
+      <button
+        type="button"
+        className="instructions-link"
+        onClick={() => setOpen(!open)}
+      >
+        📋 {open ? 'הסתר הוראות' : 'הצג הוראות'}
+      </button>
+      {open && <InstructionsDisplay instructions={instructions} />}
+    </div>
+  );
+}
+
 export function InstructionsFields({ value, onChange }) {
   const [open, setOpen] = useState(() => hasInstructions(value));
   const data = normalizeInstructions(value);
