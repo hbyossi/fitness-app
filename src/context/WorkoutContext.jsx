@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useReducer, useEffect } from 'react';
-import { loadData, saveData } from '../utils/storage';
+import { loadData, debouncedSaveData } from '../utils/storage';
 import { generateId } from '../utils/helpers';
 
 const WorkoutContext = createContext();
@@ -100,7 +100,7 @@ export function WorkoutProvider({ children }) {
   const [state, dispatch] = useReducer(reducer, initialState);
 
   useEffect(() => {
-    saveData(state);
+    debouncedSaveData(state);
   }, [state]);
 
   return (

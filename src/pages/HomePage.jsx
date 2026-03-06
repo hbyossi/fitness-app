@@ -3,7 +3,27 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useWorkout } from '../context/WorkoutContext';
 import ConfirmDialog from '../components/ConfirmDialog';
 import { InstructionsFields, normalizeInstructions } from '../components/ExerciseInstructions';
-import { exportData, validateImportData } from '../utils/storage';
+import { exportData, validateImportData, getStorageUsage } from '../utils/storage';
+
+function StorageUsageBar() {
+  const { usedKB, percentUsed } = getStorageUsage();
+  const isWarning = percentUsed > 70;
+  const isDanger = percentUsed > 90;
+  const color = isDanger ? 'var(--danger)' : isWarning ? 'var(--warning)' : 'var(--primary)';
+
+  return (
+    <div style={{ marginBottom: '0.8rem' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.3rem' }}>
+        <span>💿 אחסון: {usedKB} KB</span>
+        <span>{percentUsed}% מ-5MB</span>
+      </div>
+      <div style={{ height: 6, background: 'var(--bg-input)', borderRadius: 3, overflow: 'hidden' }}>
+        <div style={{ height: '100%', width: `${Math.min(percentUsed, 100)}%`, background: color, borderRadius: 3, transition: 'width 0.3s' }} />
+      </div>
+      {isDanger && <div style={{ fontSize: '0.75rem', color: 'var(--danger)', marginTop: '0.3rem' }}>⚠️ האחסון כמעט מלא! מומלץ לייצא גיבוי ולמחוק היסטוריה ישנה.</div>}
+    </div>
+  );
+}
 
 function AddExerciseForm({ onAdd, onCancel, exerciseBank }) {
   const [name, setName] = useState('');
@@ -249,6 +269,7 @@ export default function HomePage() {
       <div className="card" style={{ marginTop: '1rem', border: '1px dashed var(--border)' }}>
         <div className="card-title" style={{ marginBottom: '0.6rem' }}>💾 גיבוי ושחזור</div>
         <div className="card-subtitle" style={{ marginBottom: '0.8rem' }}>ייצא את כל הנתונים לקובץ גיבוי, או ייבא גיבוי קיים</div>
+        <StorageUsageBar />
         <div style={{ display: 'flex', gap: '0.5rem' }}>
           <button className="btn btn-primary" style={{ flex: 1 }} onClick={exportData}>
             📤 ייצוא גיבוי
