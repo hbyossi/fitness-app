@@ -2,19 +2,27 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useWorkout } from '../context/WorkoutContext';
 import { MUSCLE_GROUPS, generateId } from '../utils/helpers';
-import { InstructionsFields, InstructionsToggle, hasInstructions, normalizeInstructions } from '../components/ExerciseInstructions';
+import { InstructionsFields, normalizeInstructions } from '../components/ExerciseInstructions';
 import SortableExerciseList from '../components/SortableExerciseList';
+import type { Exercise, Instructions, BankExercise } from '../types';
 
-function ExerciseForm({ onAdd, exerciseBank }) {
+interface TempWorkout {
+  tempId: string;
+  name: string;
+  muscleGroup: string;
+  exercises: Exercise[];
+}
+
+function ExerciseForm({ onAdd, exerciseBank }: { onAdd: (ex: Exercise) => void; exerciseBank: BankExercise[] }) {
   const [exName, setExName] = useState('');
   const [exSets, setExSets] = useState('3');
   const [exReps, setExReps] = useState('12');
   const [exWeight, setExWeight] = useState('');
   const [exRestTime, setExRestTime] = useState('90');
-  const [exInstructions, setExInstructions] = useState({ startingPosition: '', execution: '', tempo: '', notes: '' });
+  const [exInstructions, setExInstructions] = useState<Instructions>({ startingPosition: '', execution: '', tempo: '', notes: '' });
   const [bankSearch, setBankSearch] = useState('');
 
-  const pickFromBank = (id) => {
+  const pickFromBank = (id: string) => {
     const ex = exerciseBank.find(e => e.id === id);
     if (!ex) return;
     setExName(ex.name);
@@ -101,13 +109,13 @@ export default function CreatePlanPage() {
   const exerciseBank = state.exerciseBank || [];
 
   const [planName, setPlanName] = useState('');
-  const [workouts, setWorkouts] = useState([]);
+  const [workouts, setWorkouts] = useState<TempWorkout[]>([]);
 
   // New workout form
   const [wName, setWName] = useState('');
   const [wMuscle, setWMuscle] = useState(MUSCLE_GROUPS[0]);
 
-  const [editingWorkoutIdx, setEditingWorkoutIdx] = useState(null);
+  const [editingWorkoutIdx, setEditingWorkoutIdx] = useState<number | null>(null);
 
   const addWorkout = () => {
     if (!wName.trim()) return;
@@ -122,31 +130,31 @@ export default function CreatePlanPage() {
     setWMuscle(MUSCLE_GROUPS[0]);
   };
 
-  const removeWorkout = (idx) => {
+  const removeWorkout = (idx: number) => {
     setWorkouts(prev => prev.filter((_, i) => i !== idx));
     if (editingWorkoutIdx === idx) setEditingWorkoutIdx(null);
-    else if (editingWorkoutIdx > idx) setEditingWorkoutIdx(editingWorkoutIdx - 1);
+    else if (editingWorkoutIdx !== null && editingWorkoutIdx > idx) setEditingWorkoutIdx(editingWorkoutIdx - 1);
   };
 
-  const addExerciseToWorkout = (wIdx, exercise) => {
+  const addExerciseToWorkout = (wIdx: number, exercise: Exercise) => {
     setWorkouts(prev => prev.map((w, i) =>
       i === wIdx ? { ...w, exercises: [...w.exercises, exercise] } : w
     ));
   };
 
-  const removeExercise = (wIdx, exId) => {
+  const removeExercise = (wIdx: number, exId: string) => {
     setWorkouts(prev => prev.map((w, i) =>
       i === wIdx ? { ...w, exercises: w.exercises.filter(e => e.id !== exId) } : w
     ));
   };
 
-  const updateExercise = (wIdx, exId, updates) => {
+  const updateExercise = (wIdx: number, exId: string, updates: Partial<Exercise>) => {
     setWorkouts(prev => prev.map((w, i) =>
       i === wIdx ? { ...w, exercises: w.exercises.map(e => e.id === exId ? { ...e, ...updates } : e) } : w
     ));
   };
 
-  const reorderExercises = (wIdx, newExercises) => {
+  const reorderExercises = (wIdx: number, newExercises: Exercise[]) => {
     setWorkouts(prev => prev.map((w, i) =>
       i === wIdx ? { ...w, exercises: newExercises } : w
     ));
@@ -154,7 +162,7 @@ export default function CreatePlanPage() {
 
   const totalExercises = workouts.reduce((sum, w) => sum + w.exercises.length, 0);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!planName.trim() || workouts.length === 0 || totalExercises === 0) return;
     dispatch({

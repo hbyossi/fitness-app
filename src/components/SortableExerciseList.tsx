@@ -1,10 +1,17 @@
 import React, { useState } from 'react';
-import { DndContext, closestCenter, PointerSensor, TouchSensor, useSensor, useSensors } from '@dnd-kit/core';
+import { DndContext, closestCenter, PointerSensor, TouchSensor, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy, useSortable, arrayMove } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { InstructionsToggle, hasInstructions } from './ExerciseInstructions';
+import type { Exercise } from '../types';
 
-function SortableExercise({ ex, onRemove, onUpdate }) {
+interface SortableExerciseProps {
+  ex: Exercise;
+  onRemove: (id: string) => void;
+  onUpdate: (id: string, updates: Partial<Exercise>) => void;
+}
+
+function SortableExercise({ ex, onRemove, onUpdate }: SortableExerciseProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: ex.id });
   const [editing, setEditing] = useState(false);
   const [editSets, setEditSets] = useState(String(ex.sets));
@@ -63,13 +70,20 @@ function SortableExercise({ ex, onRemove, onUpdate }) {
   );
 }
 
-export default function SortableExerciseList({ exercises, onReorder, onRemove, onUpdate }) {
+interface SortableExerciseListProps {
+  exercises: Exercise[];
+  onReorder: (exercises: Exercise[]) => void;
+  onRemove: (id: string) => void;
+  onUpdate: (id: string, updates: Partial<Exercise>) => void;
+}
+
+export default function SortableExerciseList({ exercises, onReorder, onRemove, onUpdate }: SortableExerciseListProps) {
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
     useSensor(TouchSensor, { activationConstraint: { delay: 150, tolerance: 5 } })
   );
 
-  const handleDragEnd = (event) => {
+  const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
     const oldIndex = exercises.findIndex(e => e.id === active.id);

@@ -1,12 +1,18 @@
 import React, { createContext, useContext, useReducer, useEffect } from 'react';
 import { loadData, debouncedSaveData } from '../utils/storage';
 import { generateId } from '../utils/helpers';
+import type { AppState, Action } from '../types';
 
-const WorkoutContext = createContext();
+interface WorkoutContextType {
+  state: AppState;
+  dispatch: React.Dispatch<Action>;
+}
 
-const initialState = loadData();
+const WorkoutContext = createContext<WorkoutContextType | null>(null);
 
-function reducer(state, action) {
+const initialState: AppState = loadData();
+
+function reducer(state: AppState, action: Action): AppState {
   switch (action.type) {
     case 'ADD_PLAN': {
       const plan = {
@@ -96,7 +102,7 @@ function reducer(state, action) {
   }
 }
 
-export function WorkoutProvider({ children }) {
+export function WorkoutProvider({ children }: { children: React.ReactNode }) {
   const [state, dispatch] = useReducer(reducer, initialState);
 
   useEffect(() => {
@@ -110,7 +116,7 @@ export function WorkoutProvider({ children }) {
   );
 }
 
-export function useWorkout() {
+export function useWorkout(): WorkoutContextType {
   const ctx = useContext(WorkoutContext);
   if (!ctx) throw new Error('useWorkout must be used within WorkoutProvider');
   return ctx;

@@ -3,28 +3,29 @@ import { useWorkout } from '../context/WorkoutContext';
 import { MUSCLE_GROUPS } from '../utils/helpers';
 import ConfirmDialog from '../components/ConfirmDialog';
 import { InstructionsFields, InstructionsToggle, normalizeInstructions, hasInstructions } from '../components/ExerciseInstructions';
+import type { Instructions, BankExercise } from '../types';
 
 export default function ExerciseBankPage() {
   const { state, dispatch } = useWorkout();
   const bank = state.exerciseBank || [];
 
   const [name, setName] = useState('');
-  const [instructions, setInstructions] = useState({ startingPosition: '', execution: '', tempo: '', notes: '' });
+  const [instructions, setInstructions] = useState<Instructions>({ startingPosition: '', execution: '', tempo: '', notes: '' });
   const [muscleGroup, setMuscleGroup] = useState(MUSCLE_GROUPS[0]);
   const [defaultSets, setDefaultSets] = useState('3');
   const [defaultReps, setDefaultReps] = useState('12');
 
-  const [editingId, setEditingId] = useState(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState('');
-  const [editInstructions, setEditInstructions] = useState({ startingPosition: '', execution: '', tempo: '', notes: '' });
+  const [editInstructions, setEditInstructions] = useState<Instructions>({ startingPosition: '', execution: '', tempo: '', notes: '' });
   const [editMuscle, setEditMuscle] = useState('');
   const [editSets, setEditSets] = useState('');
   const [editReps, setEditReps] = useState('');
 
-  const [deleteId, setDeleteId] = useState(null);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
   const [filter, setFilter] = useState('');
 
-  const handleAdd = (e) => {
+  const handleAdd = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return;
     dispatch({
@@ -43,7 +44,7 @@ export default function ExerciseBankPage() {
     setDefaultReps('12');
   };
 
-  const startEdit = (ex) => {
+  const startEdit = (ex: BankExercise) => {
     setEditingId(ex.id);
     setEditName(ex.name);
     setEditInstructions(normalizeInstructions(ex.instructions));
@@ -53,7 +54,7 @@ export default function ExerciseBankPage() {
   };
 
   const saveEdit = () => {
-    if (!editName.trim()) return;
+    if (!editName.trim() || !editingId) return;
     dispatch({
       type: 'UPDATE_BANK_EXERCISE',
       payload: {
@@ -69,6 +70,7 @@ export default function ExerciseBankPage() {
   };
 
   const handleDelete = () => {
+    if (!deleteId) return;
     dispatch({ type: 'DELETE_BANK_EXERCISE', payload: deleteId });
     setDeleteId(null);
   };

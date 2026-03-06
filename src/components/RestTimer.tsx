@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { formatTime } from '../utils/helpers';
 
-export default function RestTimer({ defaultSeconds = 90 }) {
+export default function RestTimer({ defaultSeconds = 90 }: { defaultSeconds?: number }) {
   const [seconds, setSeconds] = useState(defaultSeconds);
   const [running, setRunning] = useState(false);
-  const intervalRef = useRef(null);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Reset when defaultSeconds changes (exercise switch)
   useEffect(() => {

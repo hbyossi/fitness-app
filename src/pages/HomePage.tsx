@@ -4,6 +4,7 @@ import { useWorkout } from '../context/WorkoutContext';
 import ConfirmDialog from '../components/ConfirmDialog';
 import { InstructionsFields, normalizeInstructions } from '../components/ExerciseInstructions';
 import { exportData, validateImportData, getStorageUsage } from '../utils/storage';
+import type { Instructions, BankExercise } from '../types';
 
 function StorageUsageBar() {
   const { usedKB, percentUsed } = getStorageUsage();
@@ -25,15 +26,24 @@ function StorageUsageBar() {
   );
 }
 
-function AddExerciseForm({ onAdd, onCancel, exerciseBank }) {
+interface AddExerciseData {
+  name: string;
+  sets: number;
+  reps: number;
+  weight: number;
+  restTime?: number;
+  instructions: Instructions;
+}
+
+function AddExerciseForm({ onAdd, onCancel, exerciseBank }: { onAdd: (ex: AddExerciseData) => void; onCancel: () => void; exerciseBank: BankExercise[] }) {
   const [name, setName] = useState('');
   const [sets, setSets] = useState('3');
   const [reps, setReps] = useState('12');
   const [weight, setWeight] = useState('');
-  const [instructions, setInstructions] = useState({ startingPosition: '', execution: '', tempo: '', notes: '' });
+  const [instructions, setInstructions] = useState<Instructions>({ startingPosition: '', execution: '', tempo: '', notes: '' });
   const [bankSearch, setBankSearch] = useState('');
 
-  const handlePickFromBank = (id) => {
+  const handlePickFromBank = (id: string) => {
     if (!id) return;
     const ex = exerciseBank.find(e => e.id === id);
     if (ex) {
@@ -107,18 +117,18 @@ function AddExerciseForm({ onAdd, onCancel, exerciseBank }) {
 export default function HomePage() {
   const { state, dispatch } = useWorkout();
   const navigate = useNavigate();
-  const [deleteId, setDeleteId] = useState(null);
-  const [addingExercise, setAddingExercise] = useState(null); // { planId, workoutId }
-  const [expandedPlan, setExpandedPlan] = useState(null);
-  const fileInputRef = useRef(null);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [addingExercise, setAddingExercise] = useState<{ planId: string; workoutId: string } | null>(null);
+  const [expandedPlan, setExpandedPlan] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleImport = (e) => {
+  const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
     reader.onload = (evt) => {
       try {
-        const data = JSON.parse(evt.target.result);
+        const data = JSON.parse(evt.target?.result as string);
         if (!validateImportData(data)) {
           alert('קובץ הגיבוי לא תקין. ודא שזהו קובץ JSON שיוצא מהאפליקציה.');
           return;
@@ -134,15 +144,17 @@ export default function HomePage() {
     e.target.value = '';
   };
 
-  const handleAddExercise = (exercise) => {
+  const handleAddExercise = (exercise: AddExerciseData) => {
+    if (!addingExercise) return;
     dispatch({
       type: 'ADD_EXERCISE',
-      payload: { planId: addingExercise.planId, workoutId: addingExercise.workoutId, exercise }
+      payload: { planId: addingExercise.planId, workoutId: addingExercise.workoutId, exercise: { ...exercise, restTime: exercise.restTime ?? 90 } }
     });
     setAddingExercise(null);
   };
 
   const handleDelete = () => {
+    if (!deleteId) return;
     dispatch({ type: 'DELETE_PLAN', payload: deleteId });
     setDeleteId(null);
   };

@@ -1,9 +1,17 @@
 import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { formatTime } from '../utils/helpers';
+import type { HistoryExercise } from '../types';
+
+interface WorkoutSummary {
+  workoutName: string;
+  planName: string;
+  exercises: HistoryExercise[];
+  duration: number;
+}
 
 export default function WorkoutSummaryPage() {
-  const { state: routeState } = useLocation();
+  const { state: routeState } = useLocation() as { state: { summary?: WorkoutSummary } | null };
   const navigate = useNavigate();
 
   if (!routeState?.summary) {

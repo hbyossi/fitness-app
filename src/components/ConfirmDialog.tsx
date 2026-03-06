@@ -1,6 +1,13 @@
 import React from 'react';
 
-export default function ConfirmDialog({ title, text, onConfirm, onCancel }) {
+interface ConfirmDialogProps {
+  title: string;
+  text: string;
+  onConfirm: () => void;
+  onCancel: () => void;
+}
+
+export default function ConfirmDialog({ title, text, onConfirm, onCancel }: ConfirmDialogProps) {
   return (
     <div className="overlay" onClick={onCancel}>
       <div className="dialog" onClick={e => e.stopPropagation()}>

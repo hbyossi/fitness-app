@@ -1,23 +1,31 @@
 import React, { useState } from 'react';
+import type { Instructions } from '../types';
 
-const SECTIONS = [
+interface Section {
+  key: keyof Instructions;
+  label: string;
+  icon: string;
+  placeholder: string;
+}
+
+const SECTIONS: Section[] = [
   { key: 'startingPosition', label: 'עמידת מוצא', icon: '🧍', placeholder: 'לדוגמה: עמידה ברוחב כתפיים, ידיים על המוט...' },
   { key: 'execution', label: 'הוראות ביצוע', icon: '🏋️', placeholder: 'לדוגמה: לרדת לאט עד 90 מעלות, לדחוף חזרה למעלה...' },
   { key: 'tempo', label: 'קצב', icon: '⏱️', placeholder: 'לדוגמה: 3 שניות ירידה, 1 שנייה עצירה, 2 שניות עלייה' },
   { key: 'notes', label: 'דגשים חשובים', icon: '⚠️', placeholder: 'לדוגמה: לשמור על גב ישר, לא לנעול ברכיים...' },
 ];
 
-export function hasInstructions(instructions) {
+export function hasInstructions(instructions: Instructions | string | undefined | null): boolean {
   if (!instructions) return false;
   if (typeof instructions === 'string') return instructions.trim().length > 0;
   return Object.values(instructions).some(v => v && v.trim());
 }
 
-function emptyInstructions() {
+function emptyInstructions(): Instructions {
   return { startingPosition: '', execution: '', tempo: '', notes: '' };
 }
 
-export function normalizeInstructions(instructions) {
+export function normalizeInstructions(instructions: Instructions | string | undefined | null): Instructions {
   if (!instructions) return emptyInstructions();
   if (typeof instructions === 'string') {
     return { ...emptyInstructions(), execution: instructions };
@@ -25,7 +33,7 @@ export function normalizeInstructions(instructions) {
   return { ...emptyInstructions(), ...instructions };
 }
 
-export function InstructionsDisplay({ instructions }) {
+export function InstructionsDisplay({ instructions }: { instructions: Instructions | string }) {
   if (!hasInstructions(instructions)) return null;
   const data = normalizeInstructions(instructions);
 
@@ -43,7 +51,7 @@ export function InstructionsDisplay({ instructions }) {
   );
 }
 
-export function InstructionsToggle({ instructions }) {
+export function InstructionsToggle({ instructions }: { instructions: Instructions | string }) {
   const [open, setOpen] = useState(false);
   if (!hasInstructions(instructions)) return null;
 
@@ -61,11 +69,11 @@ export function InstructionsToggle({ instructions }) {
   );
 }
 
-export function InstructionsFields({ value, onChange }) {
+export function InstructionsFields({ value, onChange }: { value: Instructions | string | undefined | null; onChange: (v: Instructions) => void }) {
   const [open, setOpen] = useState(() => hasInstructions(value));
   const data = normalizeInstructions(value);
 
-  const update = (key, val) => {
+  const update = (key: keyof Instructions, val: string) => {
     onChange({ ...data, [key]: val });
   };
 

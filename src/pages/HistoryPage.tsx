@@ -1,13 +1,15 @@
 import React, { useState } from 'react';
 import { useWorkout } from '../context/WorkoutContext';
-import { formatDate, formatTime } from '../utils/helpers';
+import { formatTime } from '../utils/helpers';
 import ConfirmDialog from '../components/ConfirmDialog';
+import type { HistoryEntry } from '../types';
 
 export default function HistoryPage() {
   const { state, dispatch } = useWorkout();
-  const [deleteId, setDeleteId] = useState(null);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
 
   const handleDelete = () => {
+    if (!deleteId) return;
     dispatch({ type: 'DELETE_HISTORY', payload: deleteId });
     setDeleteId(null);
   };
@@ -22,7 +24,7 @@ export default function HistoryPage() {
   );
 
   // Group by date
-  const grouped = {};
+  const grouped: Record<string, HistoryEntry[]> = {};
   state.history.forEach(entry => {
     const dateKey = new Date(entry.date).toLocaleDateString('he-IL');
     if (!grouped[dateKey]) grouped[dateKey] = [];

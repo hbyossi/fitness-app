@@ -1,23 +1,47 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useWorkout } from '../context/WorkoutContext';
 import RestTimer from '../components/RestTimer';
 import { InstructionsToggle, hasInstructions } from '../components/ExerciseInstructions';
+import type { Instructions, HistorySet } from '../types';
+
+interface SessionSet {
+  setNum: number;
+  weight: number;
+  reps: number;
+  done: boolean;
+}
+
+interface SessionExercise {
+  exerciseId: string;
+  name: string;
+  instructions: Instructions | string;
+  restTime: number;
+  sets: SessionSet[];
+}
+
+interface SavedSession {
+  planId: string;
+  workoutId: string;
+  session: SessionExercise[];
+  currentExIndex: number;
+  startTime: number;
+}
 
 const SESSION_KEY = 'fitness_workout_session';
 
-function loadSession() {
+function loadSession(): SavedSession | null {
   try {
     const raw = sessionStorage.getItem(SESSION_KEY);
     return raw ? JSON.parse(raw) : null;
   } catch { return null; }
 }
 
-function saveSession(data) {
+function saveSession(data: SavedSession): void {
   try { sessionStorage.setItem(SESSION_KEY, JSON.stringify(data)); } catch {}
 }
 
-function clearSession() {
+function clearSession(): void {
   try { sessionStorage.removeItem(SESSION_KEY); } catch {}
 }
 
@@ -30,12 +54,12 @@ export default function WorkoutSessionPage() {
   const plan = state.plans.find(p => p.id === planId);
   const workout = plan?.workouts.find(w => w.id === workoutId);
 
-  const saved = useRef(loadSession());
+  const saved = useRef<SavedSession | null>(loadSession());
   const isResume = saved.current?.planId === planId && saved.current?.workoutId === workoutId;
-  const startTimeRef = useRef(isResume ? saved.current.startTime : Date.now());
+  const startTimeRef = useRef(isResume ? saved.current!.startTime : Date.now());
 
   // Find last logged workout for this exercise to pre-fill weights
-  const getLastWeight = (exerciseName) => {
+  const getLastWeight = (exerciseName: string): HistorySet[] | null => {
     for (const entry of state.history) {
       const found = entry.exercises.find(e => e.name === exerciseName);
       if (found) {
@@ -47,8 +71,8 @@ export default function WorkoutSessionPage() {
   };
 
   // Build session state: each exercise has sets with weight/reps/done
-  const [session, setSession] = useState(() => {
-    if (isResume) return saved.current.session;
+  const [session, setSession] = useState<SessionExercise[]>(() => {
+    if (isResume) return saved.current!.session;
     if (!workout) return [];
     return workout.exercises.map(ex => {
       const lastSets = getLastWeight(ex.name);
@@ -67,18 +91,18 @@ export default function WorkoutSessionPage() {
     });
   });
 
-  const [currentExIndex, setCurrentExIndex] = useState(isResume ? saved.current.currentExIndex : 0);
+  const [currentExIndex, setCurrentExIndex] = useState(isResume ? saved.current!.currentExIndex : 0);
 
   // Persist session to sessionStorage on every change
   useEffect(() => {
     if (finished) return;
-    saveSession({ planId, workoutId, session, currentExIndex, startTime: startTimeRef.current });
+    saveSession({ planId: planId!, workoutId: workoutId!, session, currentExIndex, startTime: startTimeRef.current });
   }, [session, currentExIndex, finished, planId, workoutId]);
 
   // Prevent accidental page close/refresh during workout
   useEffect(() => {
     if (finished) return;
-    const handler = (e) => { e.preventDefault(); };
+    const handler = (e: BeforeUnloadEvent) => { e.preventDefault(); };
     window.addEventListener('beforeunload', handler);
     return () => window.removeEventListener('beforeunload', handler);
   }, [finished]);
@@ -92,7 +116,7 @@ export default function WorkoutSessionPage() {
     );
   }
 
-  const updateSet = (exIdx, setIdx, field, value) => {
+  const updateSet = (exIdx: number, setIdx: number, field: 'weight' | 'reps', value: number) => {
     setSession(prev => {
       const copy = prev.map(ex => ({ ...ex, sets: ex.sets.map(s => ({ ...s })) }));
       copy[exIdx].sets[setIdx][field] = value;
@@ -100,7 +124,7 @@ export default function WorkoutSessionPage() {
     });
   };
 
-  const toggleSetDone = (exIdx, setIdx) => {
+  const toggleSetDone = (exIdx: number, setIdx: number) => {
     setSession(prev => {
       const copy = prev.map(ex => ({ ...ex, sets: ex.sets.map(s => ({ ...s })) }));
       copy[exIdx].sets[setIdx].done = !copy[exIdx].sets[setIdx].done;
