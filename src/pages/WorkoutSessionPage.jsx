@@ -4,6 +4,23 @@ import { useWorkout } from '../context/WorkoutContext';
 import RestTimer from '../components/RestTimer';
 import { InstructionsToggle, hasInstructions } from '../components/ExerciseInstructions';
 
+const SESSION_KEY = 'fitness_workout_session';
+
+function loadSession() {
+  try {
+    const raw = sessionStorage.getItem(SESSION_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch { return null; }
+}
+
+function saveSession(data) {
+  try { sessionStorage.setItem(SESSION_KEY, JSON.stringify(data)); } catch {}
+}
+
+function clearSession() {
+  try { sessionStorage.removeItem(SESSION_KEY); } catch {}
+}
+
 export default function WorkoutSessionPage() {
   const { planId, workoutId } = useParams();
   const { state, dispatch } = useWorkout();
@@ -12,7 +29,10 @@ export default function WorkoutSessionPage() {
 
   const plan = state.plans.find(p => p.id === planId);
   const workout = plan?.workouts.find(w => w.id === workoutId);
-  const startTimeRef = useRef(Date.now());
+
+  const saved = useRef(loadSession());
+  const isResume = saved.current?.planId === planId && saved.current?.workoutId === workoutId;
+  const startTimeRef = useRef(isResume ? saved.current.startTime : Date.now());
 
   // Find last logged workout for this exercise to pre-fill weights
   const getLastWeight = (exerciseName) => {
@@ -28,6 +48,7 @@ export default function WorkoutSessionPage() {
 
   // Build session state: each exercise has sets with weight/reps/done
   const [session, setSession] = useState(() => {
+    if (isResume) return saved.current.session;
     if (!workout) return [];
     return workout.exercises.map(ex => {
       const lastSets = getLastWeight(ex.name);
@@ -46,7 +67,13 @@ export default function WorkoutSessionPage() {
     });
   });
 
-  const [currentExIndex, setCurrentExIndex] = useState(0);
+  const [currentExIndex, setCurrentExIndex] = useState(isResume ? saved.current.currentExIndex : 0);
+
+  // Persist session to sessionStorage on every change
+  useEffect(() => {
+    if (finished) return;
+    saveSession({ planId, workoutId, session, currentExIndex, startTime: startTimeRef.current });
+  }, [session, currentExIndex, finished, planId, workoutId]);
 
   // Prevent accidental page close/refresh during workout
   useEffect(() => {
@@ -109,6 +136,7 @@ export default function WorkoutSessionPage() {
       }
     });
     setFinished(true);
+    clearSession();
     navigate('/summary', { state: { summary: { workoutName: workout.name, planName: plan.name, exercises: session.map(ex => ({ name: ex.name, sets: ex.sets.map(s => ({ weight: s.weight, reps: s.reps, done: s.done })) })), duration } } });
   };
 
@@ -117,6 +145,7 @@ export default function WorkoutSessionPage() {
       if (!window.confirm('יש סטים שהושלמו. לצאת מהאימון בלי לשמור?')) return;
     }
     setFinished(true);
+    clearSession();
     navigate('/');
   };
 
