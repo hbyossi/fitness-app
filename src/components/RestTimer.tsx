@@ -21,7 +21,7 @@ export default function RestTimer({ defaultSeconds = 90 }: { defaultSeconds?: nu
   useEffect(() => {
     if (running && seconds > 0) {
       intervalRef.current = setInterval(() => {
-        setSeconds(prev => {
+        setSeconds((prev) => {
           if (prev <= 1) {
             stop();
             return 0;
@@ -30,7 +30,9 @@ export default function RestTimer({ defaultSeconds = 90 }: { defaultSeconds?: nu
         });
       }, 1000);
     }
-    return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
   }, [running, stop]);
 
   const start = () => {
@@ -45,9 +47,7 @@ export default function RestTimer({ defaultSeconds = 90 }: { defaultSeconds?: nu
 
   return (
     <div className="card" style={{ textAlign: 'center' }}>
-      <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '0.3rem' }}>
-        טיימר מנוחה
-      </div>
+      <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '0.3rem' }}>טיימר מנוחה</div>
       <div className="timer-display">{formatTime(seconds)}</div>
       <div className="timer-controls">
         {!running ? (
@@ -59,7 +59,9 @@ export default function RestTimer({ defaultSeconds = 90 }: { defaultSeconds?: nu
             עצור
           </button>
         )}
-        <button className="btn btn-ghost" onClick={reset}>🔄</button>
+        <button className="btn btn-ghost" onClick={reset}>
+          🔄
+        </button>
       </div>
     </div>
   );

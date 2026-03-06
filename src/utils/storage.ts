@@ -17,16 +17,16 @@ const migrations: Migration[] = [
   },
   // v1 → v2: ensure exercises have restTime, instructions as object
   (data) => {
-    for (const plan of (data.plans || [])) {
-      for (const w of (plan.workouts || [])) {
-        for (const ex of (w.exercises || [])) {
+    for (const plan of data.plans || []) {
+      for (const w of plan.workouts || []) {
+        for (const ex of w.exercises || []) {
           if (ex.restTime === undefined) ex.restTime = 90;
           if (!ex.instructions || typeof ex.instructions === 'string') {
             ex.instructions = {
               startingPosition: '',
               execution: typeof ex.instructions === 'string' ? ex.instructions : '',
               tempo: '',
-              notes: ''
+              notes: '',
             };
           }
         }
@@ -36,7 +36,7 @@ const migrations: Migration[] = [
     return data;
   },
   // v2 → v3: no structural change — marks version as ID-linked-aware
-  (data) => data
+  (data) => data,
 ];
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -64,7 +64,11 @@ export function loadData(): AppState {
     const migrated = runMigrations(data);
     // Save migrated data if version changed
     if ((data._version || 0) < CURRENT_VERSION) {
-      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(migrated)); } catch {}
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(migrated));
+      } catch {
+        /* quota exceeded */
+      }
     }
     return migrated;
   } catch (e) {
@@ -104,7 +108,7 @@ export function getStorageUsage(): { usedBytes: number; usedKB: number; estimate
       usedBytes,
       usedKB: Math.round(usedBytes / 1024),
       estimatedLimit,
-      percentUsed: Math.round((usedBytes / estimatedLimit) * 100)
+      percentUsed: Math.round((usedBytes / estimatedLimit) * 100),
     };
   } catch {
     return { usedBytes: 0, usedKB: 0, estimatedLimit: 5 * 1024 * 1024, percentUsed: 0 };

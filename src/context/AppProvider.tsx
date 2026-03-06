@@ -16,7 +16,10 @@ function Persister({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     // Skip the initial render (data just loaded from storage)
-    if (isFirst.current) { isFirst.current = false; return; }
+    if (isFirst.current) {
+      isFirst.current = false;
+      return;
+    }
     debouncedSaveData({ plans, history, exerciseBank });
   }, [plans, history, exerciseBank]);
 
@@ -46,9 +49,12 @@ export function useImportData() {
   const { dispatchHistory } = useHistory();
   const { dispatchBank } = useBank();
 
-  return useCallback((data: AppState) => {
-    dispatchPlans({ type: 'IMPORT_PLANS', payload: data.plans || [] });
-    dispatchHistory({ type: 'IMPORT_HISTORY', payload: data.history || [] });
-    dispatchBank({ type: 'IMPORT_BANK', payload: data.exerciseBank || [] });
-  }, [dispatchPlans, dispatchHistory, dispatchBank]);
+  return useCallback(
+    (data: AppState) => {
+      dispatchPlans({ type: 'IMPORT_PLANS', payload: data.plans || [] });
+      dispatchHistory({ type: 'IMPORT_HISTORY', payload: data.history || [] });
+      dispatchBank({ type: 'IMPORT_BANK', payload: data.exerciseBank || [] });
+    },
+    [dispatchPlans, dispatchHistory, dispatchBank],
+  );
 }

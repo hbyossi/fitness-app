@@ -14,11 +14,9 @@ export function bankReducer(state: BankExercise[], action: BankAction): BankExer
     case 'ADD_BANK_EXERCISE':
       return [...state, { ...action.payload, id: generateId() }];
     case 'UPDATE_BANK_EXERCISE':
-      return state.map(e =>
-        e.id === action.payload.id ? { ...e, ...action.payload } : e
-      );
+      return state.map((e) => (e.id === action.payload.id ? { ...e, ...action.payload } : e));
     case 'DELETE_BANK_EXERCISE':
-      return state.filter(e => e.id !== action.payload);
+      return state.filter((e) => e.id !== action.payload);
     case 'IMPORT_BANK':
       return action.payload;
     default:
@@ -28,11 +26,7 @@ export function bankReducer(state: BankExercise[], action: BankAction): BankExer
 
 export function BankProvider({ children, initialBank }: { children: React.ReactNode; initialBank: BankExercise[] }) {
   const [exerciseBank, dispatchBank] = useReducer(bankReducer, initialBank);
-  return (
-    <BankContext.Provider value={{ exerciseBank, dispatchBank }}>
-      {children}
-    </BankContext.Provider>
-  );
+  return <BankContext.Provider value={{ exerciseBank, dispatchBank }}>{children}</BankContext.Provider>;
 }
 
 export function useBank(): BankContextType {

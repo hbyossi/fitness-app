@@ -19,12 +19,12 @@ export function historyReducer(state: HistoryEntry[], action: HistoryAction): Hi
         workoutName: action.payload.workoutName,
         date: new Date().toISOString(),
         exercises: action.payload.exercises,
-        duration: action.payload.duration
+        duration: action.payload.duration,
       };
       return [entry, ...state];
     }
     case 'DELETE_HISTORY':
-      return state.filter(h => h.id !== action.payload);
+      return state.filter((h) => h.id !== action.payload);
     case 'IMPORT_HISTORY':
       return action.payload;
     default:
@@ -32,13 +32,15 @@ export function historyReducer(state: HistoryEntry[], action: HistoryAction): Hi
   }
 }
 
-export function HistoryProvider({ children, initialHistory }: { children: React.ReactNode; initialHistory: HistoryEntry[] }) {
+export function HistoryProvider({
+  children,
+  initialHistory,
+}: {
+  children: React.ReactNode;
+  initialHistory: HistoryEntry[];
+}) {
   const [history, dispatchHistory] = useReducer(historyReducer, initialHistory);
-  return (
-    <HistoryContext.Provider value={{ history, dispatchHistory }}>
-      {children}
-    </HistoryContext.Provider>
-  );
+  return <HistoryContext.Provider value={{ history, dispatchHistory }}>{children}</HistoryContext.Provider>;
 }
 
 export function useHistory(): HistoryContextType {

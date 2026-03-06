@@ -19,11 +19,16 @@ function ExerciseForm({ onAdd, exerciseBank }: { onAdd: (ex: Exercise) => void; 
   const [exReps, setExReps] = useState('12');
   const [exWeight, setExWeight] = useState('');
   const [exRestTime, setExRestTime] = useState('90');
-  const [exInstructions, setExInstructions] = useState<Instructions>({ startingPosition: '', execution: '', tempo: '', notes: '' });
+  const [exInstructions, setExInstructions] = useState<Instructions>({
+    startingPosition: '',
+    execution: '',
+    tempo: '',
+    notes: '',
+  });
   const [bankSearch, setBankSearch] = useState('');
 
   const pickFromBank = (id: string) => {
-    const ex = exerciseBank.find(e => e.id === id);
+    const ex = exerciseBank.find((e) => e.id === id);
     if (!ex) return;
     setExName(ex.name);
     setExInstructions(normalizeInstructions(ex.instructions));
@@ -33,7 +38,7 @@ function ExerciseForm({ onAdd, exerciseBank }: { onAdd: (ex: Exercise) => void; 
   };
 
   const filteredBank = bankSearch
-    ? exerciseBank.filter(ex => ex.name.includes(bankSearch) || ex.muscleGroup.includes(bankSearch))
+    ? exerciseBank.filter((ex) => ex.name.includes(bankSearch) || ex.muscleGroup.includes(bankSearch))
     : exerciseBank;
 
   const handleAdd = () => {
@@ -45,7 +50,7 @@ function ExerciseForm({ onAdd, exerciseBank }: { onAdd: (ex: Exercise) => void; 
       reps: parseInt(exReps) || 12,
       weight: parseFloat(exWeight) || 0,
       restTime: parseInt(exRestTime) || 90,
-      instructions: exInstructions
+      instructions: exInstructions,
     });
     setExName('');
     setExWeight('');
@@ -61,13 +66,17 @@ function ExerciseForm({ onAdd, exerciseBank }: { onAdd: (ex: Exercise) => void; 
           <input
             className="form-input"
             value={bankSearch}
-            onChange={e => setBankSearch(e.target.value)}
+            onChange={(e) => setBankSearch(e.target.value)}
             placeholder="חפש תרגיל..."
             style={{ marginBottom: '0.3rem' }}
           />
-          <select className="form-select" onChange={e => pickFromBank(e.target.value)} value="">
+          <select className="form-select" onChange={(e) => pickFromBank(e.target.value)} value="">
             <option value="">בחר תרגיל...</option>
-            {filteredBank.map(ex => <option key={ex.id} value={ex.id}>{ex.name} ({ex.muscleGroup})</option>)}
+            {filteredBank.map((ex) => (
+              <option key={ex.id} value={ex.id}>
+                {ex.name} ({ex.muscleGroup})
+              </option>
+            ))}
           </select>
         </div>
       )}
@@ -75,27 +84,56 @@ function ExerciseForm({ onAdd, exerciseBank }: { onAdd: (ex: Exercise) => void; 
         <input
           className="form-input"
           value={exName}
-          onChange={e => setExName(e.target.value)}
+          onChange={(e) => setExName(e.target.value)}
           placeholder="שם התרגיל"
         />
       </div>
       <div className="form-row-3">
         <div className="form-group">
           <label className="form-label">סטים</label>
-          <input className="form-input" type="number" min="1" value={exSets} onChange={e => setExSets(e.target.value)} />
+          <input
+            className="form-input"
+            type="number"
+            min="1"
+            value={exSets}
+            onChange={(e) => setExSets(e.target.value)}
+          />
         </div>
         <div className="form-group">
           <label className="form-label">חזרות</label>
-          <input className="form-input" type="number" min="1" value={exReps} onChange={e => setExReps(e.target.value)} />
+          <input
+            className="form-input"
+            type="number"
+            min="1"
+            value={exReps}
+            onChange={(e) => setExReps(e.target.value)}
+          />
         </div>
         <div className="form-group">
           <label className="form-label">משקל (ק&quot;ג)</label>
-          <input className="form-input" type="number" min="0" step="0.5" value={exWeight} onChange={e => setExWeight(e.target.value)} placeholder="0" />
+          <input
+            className="form-input"
+            type="number"
+            min="0"
+            step="0.5"
+            value={exWeight}
+            onChange={(e) => setExWeight(e.target.value)}
+            placeholder="0"
+          />
         </div>
-      </div>      <div className="form-group">
+      </div>{' '}
+      <div className="form-group">
         <label className="form-label">⏱️ מנוחה (שניות)</label>
-        <input className="form-input" type="number" min="0" step="5" value={exRestTime} onChange={e => setExRestTime(e.target.value)} />
-      </div>      <InstructionsFields value={exInstructions} onChange={setExInstructions} />
+        <input
+          className="form-input"
+          type="number"
+          min="0"
+          step="5"
+          value={exRestTime}
+          onChange={(e) => setExRestTime(e.target.value)}
+        />
+      </div>{' '}
+      <InstructionsFields value={exInstructions} onChange={setExInstructions} />
       <button type="button" className="btn btn-primary btn-full" style={{ marginTop: '0.5rem' }} onClick={handleAdd}>
         ➕ הוסף תרגיל
       </button>
@@ -119,45 +157,46 @@ export default function CreatePlanPage() {
 
   const addWorkout = () => {
     if (!wName.trim()) return;
-    setWorkouts(prev => [...prev, {
-      tempId: generateId(),
-      name: wName.trim(),
-      muscleGroup: wMuscle,
-      exercises: []
-    }]);
+    setWorkouts((prev) => [
+      ...prev,
+      {
+        tempId: generateId(),
+        name: wName.trim(),
+        muscleGroup: wMuscle,
+        exercises: [],
+      },
+    ]);
     setEditingWorkoutIdx(workouts.length);
     setWName('');
     setWMuscle(MUSCLE_GROUPS[0]);
   };
 
   const removeWorkout = (idx: number) => {
-    setWorkouts(prev => prev.filter((_, i) => i !== idx));
+    setWorkouts((prev) => prev.filter((_, i) => i !== idx));
     if (editingWorkoutIdx === idx) setEditingWorkoutIdx(null);
     else if (editingWorkoutIdx !== null && editingWorkoutIdx > idx) setEditingWorkoutIdx(editingWorkoutIdx - 1);
   };
 
   const addExerciseToWorkout = (wIdx: number, exercise: Exercise) => {
-    setWorkouts(prev => prev.map((w, i) =>
-      i === wIdx ? { ...w, exercises: [...w.exercises, exercise] } : w
-    ));
+    setWorkouts((prev) => prev.map((w, i) => (i === wIdx ? { ...w, exercises: [...w.exercises, exercise] } : w)));
   };
 
   const removeExercise = (wIdx: number, exId: string) => {
-    setWorkouts(prev => prev.map((w, i) =>
-      i === wIdx ? { ...w, exercises: w.exercises.filter(e => e.id !== exId) } : w
-    ));
+    setWorkouts((prev) =>
+      prev.map((w, i) => (i === wIdx ? { ...w, exercises: w.exercises.filter((e) => e.id !== exId) } : w)),
+    );
   };
 
   const updateExercise = (wIdx: number, exId: string, updates: Partial<Exercise>) => {
-    setWorkouts(prev => prev.map((w, i) =>
-      i === wIdx ? { ...w, exercises: w.exercises.map(e => e.id === exId ? { ...e, ...updates } : e) } : w
-    ));
+    setWorkouts((prev) =>
+      prev.map((w, i) =>
+        i === wIdx ? { ...w, exercises: w.exercises.map((e) => (e.id === exId ? { ...e, ...updates } : e)) } : w,
+      ),
+    );
   };
 
   const reorderExercises = (wIdx: number, newExercises: Exercise[]) => {
-    setWorkouts(prev => prev.map((w, i) =>
-      i === wIdx ? { ...w, exercises: newExercises } : w
-    ));
+    setWorkouts((prev) => prev.map((w, i) => (i === wIdx ? { ...w, exercises: newExercises } : w)));
   };
 
   const totalExercises = workouts.reduce((sum, w) => sum + w.exercises.length, 0);
@@ -169,19 +208,21 @@ export default function CreatePlanPage() {
       type: 'ADD_PLAN',
       payload: {
         name: planName.trim(),
-        workouts: workouts.map(w => ({
+        workouts: workouts.map((w) => ({
           name: w.name,
           muscleGroup: w.muscleGroup,
-          exercises: w.exercises
-        }))
-      }
+          exercises: w.exercises,
+        })),
+      },
     });
     navigate('/');
   };
 
   return (
     <div>
-      <h1 className="page-title" style={{ marginBottom: '1rem' }}>תוכנית חדשה</h1>
+      <h1 className="page-title" style={{ marginBottom: '1rem' }}>
+        תוכנית חדשה
+      </h1>
 
       <form onSubmit={handleSubmit}>
         <div className="form-group">
@@ -189,8 +230,8 @@ export default function CreatePlanPage() {
           <input
             className="form-input"
             value={planName}
-            onChange={e => setPlanName(e.target.value)}
-            placeholder='לדוגמה: תוכנית 4 ימים'
+            onChange={(e) => setPlanName(e.target.value)}
+            placeholder="לדוגמה: תוכנית 4 ימים"
             required
           />
         </div>
@@ -201,13 +242,21 @@ export default function CreatePlanPage() {
             <div className="card-header">
               <div>
                 <div className="card-title">{w.name}</div>
-                <div className="card-subtitle">{w.muscleGroup} · {w.exercises.length} תרגילים</div>
+                <div className="card-subtitle">
+                  {w.muscleGroup} · {w.exercises.length} תרגילים
+                </div>
               </div>
               <div style={{ display: 'flex', gap: '0.3rem' }}>
-                <button type="button" className="btn btn-ghost" onClick={() => setEditingWorkoutIdx(editingWorkoutIdx === wIdx ? null : wIdx)}>
+                <button
+                  type="button"
+                  className="btn btn-ghost"
+                  onClick={() => setEditingWorkoutIdx(editingWorkoutIdx === wIdx ? null : wIdx)}
+                >
                   {editingWorkoutIdx === wIdx ? '▲' : '▼'}
                 </button>
-                <button type="button" className="btn btn-ghost" onClick={() => removeWorkout(wIdx)}>🗑️</button>
+                <button type="button" className="btn btn-ghost" onClick={() => removeWorkout(wIdx)}>
+                  🗑️
+                </button>
               </div>
             </div>
 
@@ -227,19 +276,25 @@ export default function CreatePlanPage() {
 
         {/* Add Workout Form */}
         <div className="card" style={{ borderStyle: 'dashed', border: '1px dashed var(--border)' }}>
-          <div className="card-title" style={{ marginBottom: '0.6rem' }}>הוסף אימון</div>
+          <div className="card-title" style={{ marginBottom: '0.6rem' }}>
+            הוסף אימון
+          </div>
           <div className="form-group">
             <input
               className="form-input"
               value={wName}
-              onChange={e => setWName(e.target.value)}
-              placeholder='לדוגמה: יום חזה + יד קדמית'
+              onChange={(e) => setWName(e.target.value)}
+              placeholder="לדוגמה: יום חזה + יד קדמית"
             />
           </div>
           <div className="form-group">
             <label className="form-label">קבוצת שרירים</label>
-            <select className="form-select" value={wMuscle} onChange={e => setWMuscle(e.target.value)}>
-              {MUSCLE_GROUPS.map(g => <option key={g} value={g}>{g}</option>)}
+            <select className="form-select" value={wMuscle} onChange={(e) => setWMuscle(e.target.value)}>
+              {MUSCLE_GROUPS.map((g) => (
+                <option key={g} value={g}>
+                  {g}
+                </option>
+              ))}
             </select>
           </div>
           <button type="button" className="btn btn-primary btn-full" onClick={addWorkout}>

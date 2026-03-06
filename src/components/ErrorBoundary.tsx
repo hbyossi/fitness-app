@@ -32,19 +32,21 @@ export default class ErrorBoundary extends React.Component<{ children: React.Rea
   render() {
     if (this.state.hasError) {
       return (
-        <div style={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          minHeight: '100dvh',
-          padding: '2rem',
-          textAlign: 'center',
-          background: '#0f172a',
-          color: '#f1f5f9',
-          fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif',
-          direction: 'rtl'
-        }}>
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            minHeight: '100dvh',
+            padding: '2rem',
+            textAlign: 'center',
+            background: '#0f172a',
+            color: '#f1f5f9',
+            fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif',
+            direction: 'rtl',
+          }}
+        >
           <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>⚠️</div>
           <h1 style={{ fontSize: '1.3rem', fontWeight: 700, marginBottom: '0.5rem' }}>משהו השתבש</h1>
           <p style={{ color: '#94a3b8', fontSize: '0.9rem', marginBottom: '1.5rem', maxWidth: 320 }}>
@@ -61,7 +63,7 @@ export default class ErrorBoundary extends React.Component<{ children: React.Rea
                 borderRadius: 12,
                 fontSize: '0.95rem',
                 fontWeight: 600,
-                cursor: 'pointer'
+                cursor: 'pointer',
               }}
             >
               🔄 נסה שוב
@@ -76,7 +78,7 @@ export default class ErrorBoundary extends React.Component<{ children: React.Rea
                 borderRadius: 12,
                 fontSize: '0.95rem',
                 fontWeight: 600,
-                cursor: 'pointer'
+                cursor: 'pointer',
               }}
             >
               📤 ייצא גיבוי ונסה שוב
@@ -85,18 +87,20 @@ export default class ErrorBoundary extends React.Component<{ children: React.Rea
           {this.state.error && (
             <details style={{ marginTop: '1.5rem', maxWidth: 400, textAlign: 'start' }}>
               <summary style={{ color: '#94a3b8', fontSize: '0.8rem', cursor: 'pointer' }}>פרטי שגיאה</summary>
-              <pre style={{
-                marginTop: '0.5rem',
-                padding: '0.6rem',
-                background: '#1e293b',
-                borderRadius: 8,
-                fontSize: '0.75rem',
-                color: '#ef4444',
-                overflow: 'auto',
-                maxHeight: 150,
-                whiteSpace: 'pre-wrap',
-                wordBreak: 'break-word'
-              }}>
+              <pre
+                style={{
+                  marginTop: '0.5rem',
+                  padding: '0.6rem',
+                  background: '#1e293b',
+                  borderRadius: 8,
+                  fontSize: '0.75rem',
+                  color: '#ef4444',
+                  overflow: 'auto',
+                  maxHeight: 150,
+                  whiteSpace: 'pre-wrap',
+                  wordBreak: 'break-word',
+                }}
+              >
                 {this.state.error.toString()}
               </pre>
             </details>

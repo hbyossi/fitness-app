@@ -7,7 +7,7 @@ export default function ViewPlanPage() {
   const { planId } = useParams();
   const { plans } = usePlans();
   const navigate = useNavigate();
-  const plan = plans.find(p => p.id === planId);
+  const plan = plans.find((p) => p.id === planId);
 
   if (!plan) {
     return (
@@ -24,21 +24,29 @@ export default function ViewPlanPage() {
     <div>
       <div className="page-header">
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <button className="btn btn-ghost" onClick={() => navigate('/')}>← חזרה</button>
+          <button className="btn btn-ghost" onClick={() => navigate('/')}>
+            ← חזרה
+          </button>
           <div>
             <h1 className="page-title">{plan.name}</h1>
-            <div className="card-subtitle">{plan.workouts.length} אימונים · {totalExercises} תרגילים</div>
+            <div className="card-subtitle">
+              {plan.workouts.length} אימונים · {totalExercises} תרגילים
+            </div>
           </div>
         </div>
-        <Link to={`/edit/${plan.id}`} className="btn btn-ghost" title="ערוך">✏️</Link>
+        <Link to={`/edit/${plan.id}`} className="btn btn-ghost" title="ערוך">
+          ✏️
+        </Link>
       </div>
 
-      {plan.workouts.map(workout => (
+      {plan.workouts.map((workout) => (
         <div key={workout.id} className="card">
           <div className="card-header">
             <div>
               <div className="card-title">{workout.name}</div>
-              <div className="card-subtitle">{workout.muscleGroup} · {workout.exercises.length} תרגילים</div>
+              <div className="card-subtitle">
+                {workout.muscleGroup} · {workout.exercises.length} תרגילים
+              </div>
             </div>
             <Link
               to={`/workout/${plan.id}/${workout.id}`}

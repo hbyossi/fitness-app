@@ -14,14 +14,34 @@ function StorageUsageBar() {
 
   return (
     <div style={{ marginBottom: '0.8rem' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.3rem' }}>
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          fontSize: '0.75rem',
+          color: 'var(--text-muted)',
+          marginBottom: '0.3rem',
+        }}
+      >
         <span>💿 אחסון: {usedKB} KB</span>
         <span>{percentUsed}% מ-5MB</span>
       </div>
       <div style={{ height: 6, background: 'var(--bg-input)', borderRadius: 3, overflow: 'hidden' }}>
-        <div style={{ height: '100%', width: `${Math.min(percentUsed, 100)}%`, background: color, borderRadius: 3, transition: 'width 0.3s' }} />
+        <div
+          style={{
+            height: '100%',
+            width: `${Math.min(percentUsed, 100)}%`,
+            background: color,
+            borderRadius: 3,
+            transition: 'width 0.3s',
+          }}
+        />
       </div>
-      {isDanger && <div style={{ fontSize: '0.75rem', color: 'var(--danger)', marginTop: '0.3rem' }}>⚠️ האחסון כמעט מלא! מומלץ לייצא גיבוי ולמחוק היסטוריה ישנה.</div>}
+      {isDanger && (
+        <div style={{ fontSize: '0.75rem', color: 'var(--danger)', marginTop: '0.3rem' }}>
+          ⚠️ האחסון כמעט מלא! מומלץ לייצא גיבוי ולמחוק היסטוריה ישנה.
+        </div>
+      )}
     </div>
   );
 }
@@ -35,17 +55,30 @@ interface AddExerciseData {
   instructions: Instructions;
 }
 
-function AddExerciseForm({ onAdd, onCancel, exerciseBank }: { onAdd: (ex: AddExerciseData) => void; onCancel: () => void; exerciseBank: BankExercise[] }) {
+function AddExerciseForm({
+  onAdd,
+  onCancel,
+  exerciseBank,
+}: {
+  onAdd: (ex: AddExerciseData) => void;
+  onCancel: () => void;
+  exerciseBank: BankExercise[];
+}) {
   const [name, setName] = useState('');
   const [sets, setSets] = useState('3');
   const [reps, setReps] = useState('12');
   const [weight, setWeight] = useState('');
-  const [instructions, setInstructions] = useState<Instructions>({ startingPosition: '', execution: '', tempo: '', notes: '' });
+  const [instructions, setInstructions] = useState<Instructions>({
+    startingPosition: '',
+    execution: '',
+    tempo: '',
+    notes: '',
+  });
   const [bankSearch, setBankSearch] = useState('');
 
   const handlePickFromBank = (id: string) => {
     if (!id) return;
-    const ex = exerciseBank.find(e => e.id === id);
+    const ex = exerciseBank.find((e) => e.id === id);
     if (ex) {
       setName(ex.name);
       setInstructions(normalizeInstructions(ex.instructions));
@@ -56,7 +89,7 @@ function AddExerciseForm({ onAdd, onCancel, exerciseBank }: { onAdd: (ex: AddExe
   };
 
   const filteredBank = bankSearch
-    ? exerciseBank.filter(ex => ex.name.includes(bankSearch) || ex.muscleGroup.includes(bankSearch))
+    ? exerciseBank.filter((ex) => ex.name.includes(bankSearch) || ex.muscleGroup.includes(bankSearch))
     : exerciseBank;
 
   const handleSubmit = () => {
@@ -66,7 +99,7 @@ function AddExerciseForm({ onAdd, onCancel, exerciseBank }: { onAdd: (ex: AddExe
       sets: parseInt(sets) || 3,
       reps: parseInt(reps) || 12,
       weight: parseFloat(weight) || 0,
-      instructions
+      instructions,
     });
   };
 
@@ -78,37 +111,53 @@ function AddExerciseForm({ onAdd, onCancel, exerciseBank }: { onAdd: (ex: AddExe
           <input
             className="form-input"
             value={bankSearch}
-            onChange={e => setBankSearch(e.target.value)}
+            onChange={(e) => setBankSearch(e.target.value)}
             placeholder="חפש תרגיל..."
             style={{ marginBottom: '0.3rem' }}
           />
-          <select className="form-select" defaultValue="" onChange={e => handlePickFromBank(e.target.value)}>
+          <select className="form-select" defaultValue="" onChange={(e) => handlePickFromBank(e.target.value)}>
             <option value="">-- בחירה חופשית --</option>
-            {filteredBank.map(ex => <option key={ex.id} value={ex.id}>{ex.name} ({ex.muscleGroup})</option>)}
+            {filteredBank.map((ex) => (
+              <option key={ex.id} value={ex.id}>
+                {ex.name} ({ex.muscleGroup})
+              </option>
+            ))}
           </select>
         </div>
       )}
       <div className="form-group">
-        <input className="form-input" value={name} onChange={e => setName(e.target.value)} placeholder="שם התרגיל" />
+        <input className="form-input" value={name} onChange={(e) => setName(e.target.value)} placeholder="שם התרגיל" />
       </div>
       <div className="form-row-3">
         <div className="form-group">
           <label className="form-label">סטים</label>
-          <input className="form-input" type="number" min="1" value={sets} onChange={e => setSets(e.target.value)} />
+          <input className="form-input" type="number" min="1" value={sets} onChange={(e) => setSets(e.target.value)} />
         </div>
         <div className="form-group">
           <label className="form-label">חזרות</label>
-          <input className="form-input" type="number" min="1" value={reps} onChange={e => setReps(e.target.value)} />
+          <input className="form-input" type="number" min="1" value={reps} onChange={(e) => setReps(e.target.value)} />
         </div>
         <div className="form-group">
           <label className="form-label">משקל (ק&quot;ג)</label>
-          <input className="form-input" type="number" min="0" step="0.5" value={weight} onChange={e => setWeight(e.target.value)} placeholder="0" />
+          <input
+            className="form-input"
+            type="number"
+            min="0"
+            step="0.5"
+            value={weight}
+            onChange={(e) => setWeight(e.target.value)}
+            placeholder="0"
+          />
         </div>
       </div>
       <InstructionsFields value={instructions} onChange={setInstructions} />
       <div style={{ display: 'flex', gap: '0.4rem', marginTop: '0.5rem' }}>
-        <button type="button" className="btn btn-success" style={{ flex: 1 }} onClick={handleSubmit}>✅ הוסף</button>
-        <button type="button" className="btn btn-ghost" onClick={onCancel}>ביטול</button>
+        <button type="button" className="btn btn-success" style={{ flex: 1 }} onClick={handleSubmit}>
+          ✅ הוסף
+        </button>
+        <button type="button" className="btn btn-ghost" onClick={onCancel}>
+          ביטול
+        </button>
       </div>
     </div>
   );
@@ -135,7 +184,12 @@ export default function HomePage() {
           alert('קובץ הגיבוי לא תקין. ודא שזהו קובץ JSON שיוצא מהאפליקציה.');
           return;
         }
-        if (!window.confirm(`ייבוא יחליף את כל הנתונים הנוכחיים. נמצאו ${data.plans.length} תוכניות, ${data.history.length} אימונים ו-${data.exerciseBank.length} תרגילים במאגר. להמשיך?`)) return;
+        if (
+          !window.confirm(
+            `ייבוא יחליף את כל הנתונים הנוכחיים. נמצאו ${data.plans.length} תוכניות, ${data.history.length} אימונים ו-${data.exerciseBank.length} תרגילים במאגר. להמשיך?`,
+          )
+        )
+          return;
         importData(data);
         alert('הנתונים יובאו בהצלחה! ✅');
       } catch {
@@ -150,7 +204,11 @@ export default function HomePage() {
     if (!addingExercise) return;
     dispatchPlans({
       type: 'ADD_EXERCISE',
-      payload: { planId: addingExercise.planId, workoutId: addingExercise.workoutId, exercise: { ...exercise, restTime: exercise.restTime ?? 90 } }
+      payload: {
+        planId: addingExercise.planId,
+        workoutId: addingExercise.workoutId,
+        exercise: { ...exercise, restTime: exercise.restTime ?? 90 },
+      },
     });
     setAddingExercise(null);
   };
@@ -172,24 +230,20 @@ export default function HomePage() {
         <div className="empty-state">
           <div className="empty-icon">💪</div>
           <div className="empty-text">אין תוכניות אימון עדיין</div>
-          <Link to="/create" className="btn btn-primary">צור תוכנית חדשה</Link>
+          <Link to="/create" className="btn btn-primary">
+            צור תוכנית חדשה
+          </Link>
         </div>
       ) : (
-        plans.map(plan => (
+        plans.map((plan) => (
           <div key={plan.id} className="card">
             <div className="card-header">
               <div>
                 <div className="card-title">{plan.name}</div>
-                <div className="card-subtitle">
-                  {plan.workouts.length} אימונים
-                </div>
+                <div className="card-subtitle">{plan.workouts.length} אימונים</div>
               </div>
               <div style={{ display: 'flex', gap: '0.3rem' }}>
-                <button
-                  className="btn btn-ghost"
-                  onClick={() => navigate(`/plan/${plan.id}`)}
-                  title="צפייה"
-                >
+                <button className="btn btn-ghost" onClick={() => navigate(`/plan/${plan.id}`)} title="צפייה">
                   👁️
                 </button>
                 <button
@@ -199,18 +253,10 @@ export default function HomePage() {
                 >
                   📋
                 </button>
-                <button
-                  className="btn btn-ghost"
-                  onClick={() => navigate(`/edit/${plan.id}`)}
-                  title="ערוך"
-                >
+                <button className="btn btn-ghost" onClick={() => navigate(`/edit/${plan.id}`)} title="ערוך">
                   ✏️
                 </button>
-                <button
-                  className="btn btn-ghost"
-                  onClick={() => setDeleteId(plan.id)}
-                  title="מחק"
-                >
+                <button className="btn btn-ghost" onClick={() => setDeleteId(plan.id)} title="מחק">
                   🗑️
                 </button>
               </div>
@@ -226,54 +272,60 @@ export default function HomePage() {
               </div>
             </div>
             {expandedPlan === plan.id && (
-            <div>
-              {plan.workouts.map(workout => (
-                <React.Fragment key={workout.id}>
-                  <div style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    background: 'var(--bg-input)',
-                    borderRadius: 8,
-                    padding: '0.6rem 0.8rem',
-                    marginBottom: '0.4rem'
-                  }}>
-                    <div>
-                      <div style={{ fontWeight: 600, fontSize: '0.95rem' }}>{workout.name}</div>
-                      <div className="exercise-detail">
-                        {workout.muscleGroup} · {workout.exercises.length} תרגילים
+              <div>
+                {plan.workouts.map((workout) => (
+                  <React.Fragment key={workout.id}>
+                    <div
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        background: 'var(--bg-input)',
+                        borderRadius: 8,
+                        padding: '0.6rem 0.8rem',
+                        marginBottom: '0.4rem',
+                      }}
+                    >
+                      <div>
+                        <div style={{ fontWeight: 600, fontSize: '0.95rem' }}>{workout.name}</div>
+                        <div className="exercise-detail">
+                          {workout.muscleGroup} · {workout.exercises.length} תרגילים
+                        </div>
+                      </div>
+                      <div style={{ display: 'flex', gap: '0.3rem' }}>
+                        <button
+                          className="btn btn-ghost"
+                          style={{ fontSize: '0.8rem', padding: '0.4rem' }}
+                          onClick={() =>
+                            setAddingExercise(
+                              addingExercise?.workoutId === workout.id
+                                ? null
+                                : { planId: plan.id, workoutId: workout.id },
+                            )
+                          }
+                          title="הוסף תרגיל"
+                        >
+                          ➕
+                        </button>
+                        <Link
+                          to={`/workout/${plan.id}/${workout.id}`}
+                          className="btn btn-primary"
+                          style={{ fontSize: '0.8rem', padding: '0.4rem 0.8rem' }}
+                        >
+                          🏋️ התחל
+                        </Link>
                       </div>
                     </div>
-                    <div style={{ display: 'flex', gap: '0.3rem' }}>
-                      <button
-                        className="btn btn-ghost"
-                        style={{ fontSize: '0.8rem', padding: '0.4rem' }}
-                        onClick={() => setAddingExercise(
-                          addingExercise?.workoutId === workout.id ? null : { planId: plan.id, workoutId: workout.id }
-                        )}
-                        title="הוסף תרגיל"
-                      >
-                        ➕
-                      </button>
-                      <Link
-                        to={`/workout/${plan.id}/${workout.id}`}
-                        className="btn btn-primary"
-                        style={{ fontSize: '0.8rem', padding: '0.4rem 0.8rem' }}
-                      >
-                        🏋️ התחל
-                      </Link>
-                    </div>
-                  </div>
-                  {addingExercise?.planId === plan.id && addingExercise?.workoutId === workout.id && (
-                    <AddExerciseForm
-                      onAdd={handleAddExercise}
-                      onCancel={() => setAddingExercise(null)}
-                      exerciseBank={exerciseBank}
-                    />
-                  )}
-                </React.Fragment>
-              ))}
-            </div>
+                    {addingExercise?.planId === plan.id && addingExercise?.workoutId === workout.id && (
+                      <AddExerciseForm
+                        onAdd={handleAddExercise}
+                        onCancel={() => setAddingExercise(null)}
+                        exerciseBank={exerciseBank}
+                      />
+                    )}
+                  </React.Fragment>
+                ))}
+              </div>
             )}
           </div>
         ))
@@ -281,24 +333,26 @@ export default function HomePage() {
 
       {/* Data Management */}
       <div className="card" style={{ marginTop: '1rem', border: '1px dashed var(--border)' }}>
-        <div className="card-title" style={{ marginBottom: '0.6rem' }}>💾 גיבוי ושחזור</div>
-        <div className="card-subtitle" style={{ marginBottom: '0.8rem' }}>ייצא את כל הנתונים לקובץ גיבוי, או ייבא גיבוי קיים</div>
+        <div className="card-title" style={{ marginBottom: '0.6rem' }}>
+          💾 גיבוי ושחזור
+        </div>
+        <div className="card-subtitle" style={{ marginBottom: '0.8rem' }}>
+          ייצא את כל הנתונים לקובץ גיבוי, או ייבא גיבוי קיים
+        </div>
         <StorageUsageBar />
         <div style={{ display: 'flex', gap: '0.5rem' }}>
           <button className="btn btn-primary" style={{ flex: 1 }} onClick={exportData}>
             📤 ייצוא גיבוי
           </button>
-          <button className="btn btn-ghost" style={{ flex: 1, border: '1px solid var(--border)' }} onClick={() => fileInputRef.current?.click()}>
+          <button
+            className="btn btn-ghost"
+            style={{ flex: 1, border: '1px solid var(--border)' }}
+            onClick={() => fileInputRef.current?.click()}
+          >
             📥 ייבוא גיבוי
           </button>
         </div>
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept=".json"
-          style={{ display: 'none' }}
-          onChange={handleImport}
-        />
+        <input ref={fileInputRef} type="file" accept=".json" style={{ display: 'none' }} onChange={handleImport} />
       </div>
 
       {deleteId && (

@@ -17,15 +17,20 @@ export default function HistoryPage() {
   // Weekly stats
   const now = new Date();
   const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-  const thisWeek = history.filter(e => new Date(e.date) >= weekAgo);
-  const weeklyVolume = thisWeek.reduce((acc, entry) =>
-    acc + entry.exercises.reduce((a, ex) =>
-      a + ex.sets.filter(s => s.done).reduce((s, set) => s + set.weight * set.reps, 0), 0), 0
+  const thisWeek = history.filter((e) => new Date(e.date) >= weekAgo);
+  const weeklyVolume = thisWeek.reduce(
+    (acc, entry) =>
+      acc +
+      entry.exercises.reduce(
+        (a, ex) => a + ex.sets.filter((s) => s.done).reduce((s, set) => s + set.weight * set.reps, 0),
+        0,
+      ),
+    0,
   );
 
   // Group by date
   const grouped: Record<string, HistoryEntry[]> = {};
-  history.forEach(entry => {
+  history.forEach((entry) => {
     const dateKey = new Date(entry.date).toLocaleDateString('he-IL');
     if (!grouped[dateKey]) grouped[dateKey] = [];
     grouped[dateKey].push(entry);
@@ -46,7 +51,9 @@ export default function HistoryPage() {
           </div>
           <div className="card" style={{ textAlign: 'center', marginBottom: 0 }}>
             <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>📊 נפח שבועי</div>
-            <div style={{ fontSize: '1.3rem', fontWeight: 700, color: 'var(--warning)' }}>{weeklyVolume.toLocaleString()} ק"ג</div>
+            <div style={{ fontSize: '1.3rem', fontWeight: 700, color: 'var(--warning)' }}>
+              {weeklyVolume.toLocaleString()} ק"ג
+            </div>
           </div>
         </div>
       )}
@@ -60,13 +67,9 @@ export default function HistoryPage() {
         Object.entries(grouped).map(([dateKey, entries]) => (
           <div key={dateKey}>
             <div className="history-date">{dateKey}</div>
-            {entries.map(entry => {
-              const completedSets = entry.exercises.reduce(
-                (acc, ex) => acc + ex.sets.filter(s => s.done).length, 0
-              );
-              const totalSets = entry.exercises.reduce(
-                (acc, ex) => acc + ex.sets.length, 0
-              );
+            {entries.map((entry) => {
+              const completedSets = entry.exercises.reduce((acc, ex) => acc + ex.sets.filter((s) => s.done).length, 0);
+              const totalSets = entry.exercises.reduce((acc, ex) => acc + ex.sets.length, 0);
 
               return (
                 <div key={entry.id} className="card">
@@ -77,10 +80,20 @@ export default function HistoryPage() {
                         {entry.planName} · {completedSets}/{totalSets} סטים · {formatTime(entry.duration)}
                       </div>
                       <div className="card-subtitle" style={{ color: 'var(--warning)' }}>
-                        נפח: {entry.exercises.reduce((a, ex) => a + ex.sets.filter(s => s.done).reduce((s, set) => s + set.weight * set.reps, 0), 0).toLocaleString()} ק"ג
+                        נפח:{' '}
+                        {entry.exercises
+                          .reduce(
+                            (a, ex) =>
+                              a + ex.sets.filter((s) => s.done).reduce((s, set) => s + set.weight * set.reps, 0),
+                            0,
+                          )
+                          .toLocaleString()}{' '}
+                        ק"ג
                       </div>
                     </div>
-                    <button className="btn btn-ghost" onClick={() => setDeleteId(entry.id)}>🗑️</button>
+                    <button className="btn btn-ghost" onClick={() => setDeleteId(entry.id)}>
+                      🗑️
+                    </button>
                   </div>
 
                   {entry.exercises.map((ex, i) => (
@@ -88,8 +101,8 @@ export default function HistoryPage() {
                       <span className="history-exercise">{ex.name}</span>
                       <span className="history-sets">
                         {ex.sets
-                          .filter(s => s.done)
-                          .map(s => `${s.weight}ק"ג×${s.reps}`)
+                          .filter((s) => s.done)
+                          .map((s) => `${s.weight}ק"ג×${s.reps}`)
                           .join(' | ')}
                       </span>
                     </div>

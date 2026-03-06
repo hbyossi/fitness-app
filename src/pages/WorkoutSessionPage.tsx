@@ -34,15 +34,25 @@ function loadSession(): SavedSession | null {
   try {
     const raw = sessionStorage.getItem(SESSION_KEY);
     return raw ? JSON.parse(raw) : null;
-  } catch { return null; }
+  } catch {
+    return null;
+  }
 }
 
 function saveSession(data: SavedSession): void {
-  try { sessionStorage.setItem(SESSION_KEY, JSON.stringify(data)); } catch {}
+  try {
+    sessionStorage.setItem(SESSION_KEY, JSON.stringify(data));
+  } catch {
+    /* quota exceeded */
+  }
 }
 
 function clearSession(): void {
-  try { sessionStorage.removeItem(SESSION_KEY); } catch {}
+  try {
+    sessionStorage.removeItem(SESSION_KEY);
+  } catch {
+    /* ignore */
+  }
 }
 
 export default function WorkoutSessionPage() {
@@ -52,8 +62,8 @@ export default function WorkoutSessionPage() {
   const navigate = useNavigate();
   const [finished, setFinished] = useState(false);
 
-  const plan = plans.find(p => p.id === planId);
-  const workout = plan?.workouts.find(w => w.id === workoutId);
+  const plan = plans.find((p) => p.id === planId);
+  const workout = plan?.workouts.find((w) => w.id === workoutId);
 
   const saved = useRef<SavedSession | null>(loadSession());
   const isResume = saved.current?.planId === planId && saved.current?.workoutId === workoutId;
@@ -62,10 +72,11 @@ export default function WorkoutSessionPage() {
   // Find last logged workout for this exercise to pre-fill weights (ID primary, name fallback)
   const getLastWeight = (exerciseId: string, exerciseName: string): HistorySet[] | null => {
     for (const entry of history) {
-      const found = entry.exercises.find(e => e.exerciseId === exerciseId) ||
-                    entry.exercises.find(e => e.name === exerciseName);
+      const found =
+        entry.exercises.find((e) => e.exerciseId === exerciseId) ||
+        entry.exercises.find((e) => e.name === exerciseName);
       if (found) {
-        const doneSets = found.sets.filter(s => s.done);
+        const doneSets = found.sets.filter((s) => s.done);
         if (doneSets.length > 0) return doneSets;
       }
     }
@@ -76,7 +87,7 @@ export default function WorkoutSessionPage() {
   const [session, setSession] = useState<SessionExercise[]>(() => {
     if (isResume) return saved.current!.session;
     if (!workout) return [];
-    return workout.exercises.map(ex => {
+    return workout.exercises.map((ex) => {
       const lastSets = getLastWeight(ex.id, ex.name);
       return {
         exerciseId: ex.id,
@@ -87,8 +98,8 @@ export default function WorkoutSessionPage() {
           setNum: i + 1,
           weight: lastSets?.[i]?.weight ?? (ex.weight || 0),
           reps: lastSets?.[i]?.reps ?? ex.reps,
-          done: false
-        }))
+          done: false,
+        })),
       };
     });
   });
@@ -104,7 +115,9 @@ export default function WorkoutSessionPage() {
   // Prevent accidental page close/refresh during workout
   useEffect(() => {
     if (finished) return;
-    const handler = (e: BeforeUnloadEvent) => { e.preventDefault(); };
+    const handler = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+    };
     window.addEventListener('beforeunload', handler);
     return () => window.removeEventListener('beforeunload', handler);
   }, [finished]);
@@ -119,26 +132,26 @@ export default function WorkoutSessionPage() {
   }
 
   const updateSet = (exIdx: number, setIdx: number, field: 'weight' | 'reps', value: number) => {
-    setSession(prev => {
-      const copy = prev.map(ex => ({ ...ex, sets: ex.sets.map(s => ({ ...s })) }));
+    setSession((prev) => {
+      const copy = prev.map((ex) => ({ ...ex, sets: ex.sets.map((s) => ({ ...s })) }));
       copy[exIdx].sets[setIdx][field] = value;
       return copy;
     });
   };
 
   const toggleSetDone = (exIdx: number, setIdx: number) => {
-    setSession(prev => {
-      const copy = prev.map(ex => ({ ...ex, sets: ex.sets.map(s => ({ ...s })) }));
+    setSession((prev) => {
+      const copy = prev.map((ex) => ({ ...ex, sets: ex.sets.map((s) => ({ ...s })) }));
       copy[exIdx].sets[setIdx].done = !copy[exIdx].sets[setIdx].done;
       // Auto-advance to next exercise if all sets done
-      if (copy[exIdx].sets.every(s => s.done) && exIdx < copy.length - 1) {
+      if (copy[exIdx].sets.every((s) => s.done) && exIdx < copy.length - 1) {
         setTimeout(() => setCurrentExIndex(exIdx + 1), 400);
       }
       return copy;
     });
   };
 
-  const completedSets = session.reduce((acc, ex) => acc + ex.sets.filter(s => s.done).length, 0);
+  const completedSets = session.reduce((acc, ex) => acc + ex.sets.filter((s) => s.done).length, 0);
   const totalSets = session.reduce((acc, ex) => acc + ex.sets.length, 0);
   const progress = totalSets > 0 ? Math.round((completedSets / totalSets) * 100) : 0;
 
@@ -150,21 +163,34 @@ export default function WorkoutSessionPage() {
         planId: plan.id,
         planName: plan.name,
         workoutName: workout.name,
-        exercises: session.map(ex => ({
+        exercises: session.map((ex) => ({
           exerciseId: ex.exerciseId,
           name: ex.name,
-          sets: ex.sets.map(s => ({
+          sets: ex.sets.map((s) => ({
             weight: s.weight,
             reps: s.reps,
-            done: s.done
-          }))
+            done: s.done,
+          })),
         })),
-        duration
-      }
+        duration,
+      },
     });
     setFinished(true);
     clearSession();
-    navigate('/summary', { state: { summary: { workoutName: workout.name, planName: plan.name, exercises: session.map(ex => ({ exerciseId: ex.exerciseId, name: ex.name, sets: ex.sets.map(s => ({ weight: s.weight, reps: s.reps, done: s.done })) })), duration } } });
+    navigate('/summary', {
+      state: {
+        summary: {
+          workoutName: workout.name,
+          planName: plan.name,
+          exercises: session.map((ex) => ({
+            exerciseId: ex.exerciseId,
+            name: ex.name,
+            sets: ex.sets.map((s) => ({ weight: s.weight, reps: s.reps, done: s.done })),
+          })),
+          duration,
+        },
+      },
+    });
   };
 
   const handleQuit = () => {
@@ -182,7 +208,9 @@ export default function WorkoutSessionPage() {
     <div>
       <div className="page-header">
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <button className="btn btn-ghost" onClick={handleQuit} title="יציאה">✕</button>
+          <button className="btn btn-ghost" onClick={handleQuit} title="יציאה">
+            ✕
+          </button>
           <div>
             <h1 className="page-title">{workout.name}</h1>
             <div className="card-subtitle">{plan.name}</div>
@@ -192,26 +220,30 @@ export default function WorkoutSessionPage() {
       </div>
 
       {/* Progress bar */}
-      <div style={{
-        height: 6,
-        background: 'var(--bg-input)',
-        borderRadius: 3,
-        marginBottom: '1rem',
-        overflow: 'hidden'
-      }}>
-        <div style={{
-          height: '100%',
-          width: `${progress}%`,
-          background: progress === 100 ? 'var(--success)' : 'var(--primary)',
+      <div
+        style={{
+          height: 6,
+          background: 'var(--bg-input)',
           borderRadius: 3,
-          transition: 'width 0.3s'
-        }} />
+          marginBottom: '1rem',
+          overflow: 'hidden',
+        }}
+      >
+        <div
+          style={{
+            height: '100%',
+            width: `${progress}%`,
+            background: progress === 100 ? 'var(--success)' : 'var(--primary)',
+            borderRadius: 3,
+            transition: 'width 0.3s',
+          }}
+        />
       </div>
 
       {/* Exercise navigation */}
       <div style={{ display: 'flex', gap: '0.4rem', marginBottom: '1rem', overflowX: 'auto', paddingBottom: '0.3rem' }}>
         {session.map((ex, i) => {
-          const allDone = ex.sets.every(s => s.done);
+          const allDone = ex.sets.every((s) => s.done);
           return (
             <button
               key={i}
@@ -222,7 +254,7 @@ export default function WorkoutSessionPage() {
                 fontSize: '0.8rem',
                 padding: '0.4rem 0.7rem',
                 whiteSpace: 'nowrap',
-                flexShrink: 0
+                flexShrink: 0,
               }}
             >
               {ex.name}
@@ -234,12 +266,19 @@ export default function WorkoutSessionPage() {
       {/* Current exercise sets */}
       {currentEx && (
         <div className="card">
-          <div className="card-title" style={{ marginBottom: '0.3rem' }}>{currentEx.name}</div>
+          <div className="card-title" style={{ marginBottom: '0.3rem' }}>
+            {currentEx.name}
+          </div>
           {hasInstructions(currentEx.instructions) && (
-            <div style={{ marginBottom: '0.6rem' }}><InstructionsToggle instructions={currentEx.instructions} /></div>
+            <div style={{ marginBottom: '0.6rem' }}>
+              <InstructionsToggle instructions={currentEx.instructions} />
+            </div>
           )}
 
-          <div className="set-row" style={{ color: 'var(--text-muted)', fontSize: '0.8rem', borderBottom: '1px solid var(--border)' }}>
+          <div
+            className="set-row"
+            style={{ color: 'var(--text-muted)', fontSize: '0.8rem', borderBottom: '1px solid var(--border)' }}
+          >
             <span className="set-number">סט</span>
             <span style={{ textAlign: 'center' }}>משקל (ק&quot;ג)</span>
             <span style={{ textAlign: 'center' }}>חזרות</span>
@@ -255,14 +294,14 @@ export default function WorkoutSessionPage() {
                 min="0"
                 step="0.5"
                 value={set.weight}
-                onChange={e => updateSet(currentExIndex, sIdx, 'weight', parseFloat(e.target.value) || 0)}
+                onChange={(e) => updateSet(currentExIndex, sIdx, 'weight', parseFloat(e.target.value) || 0)}
               />
               <input
                 className="set-input"
                 type="number"
                 min="0"
                 value={set.reps}
-                onChange={e => updateSet(currentExIndex, sIdx, 'reps', parseInt(e.target.value) || 0)}
+                onChange={(e) => updateSet(currentExIndex, sIdx, 'reps', parseInt(e.target.value) || 0)}
               />
               <button
                 className={`set-check ${set.done ? 'done' : ''}`}
@@ -278,14 +317,14 @@ export default function WorkoutSessionPage() {
             <button
               className="btn btn-ghost"
               disabled={currentExIndex === 0}
-              onClick={() => setCurrentExIndex(i => i - 1)}
+              onClick={() => setCurrentExIndex((i) => i - 1)}
             >
               → תרגיל קודם
             </button>
             <button
               className="btn btn-ghost"
               disabled={currentExIndex === session.length - 1}
-              onClick={() => setCurrentExIndex(i => i + 1)}
+              onClick={() => setCurrentExIndex((i) => i + 1)}
             >
               תרגיל הבא ←
             </button>
@@ -295,11 +334,7 @@ export default function WorkoutSessionPage() {
 
       <RestTimer defaultSeconds={currentEx?.restTime || 90} />
 
-      <button
-        className="btn btn-success btn-full"
-        onClick={finishWorkout}
-        style={{ marginTop: '1rem' }}
-      >
+      <button className="btn btn-success btn-full" onClick={finishWorkout} style={{ marginTop: '1rem' }}>
         🏁 סיים אימון ({completedSets}/{totalSets} סטים)
       </button>
     </div>

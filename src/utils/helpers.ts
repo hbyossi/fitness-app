@@ -8,7 +8,7 @@ export function formatDate(iso: string): string {
     weekday: 'short',
     day: 'numeric',
     month: 'short',
-    year: 'numeric'
+    year: 'numeric',
   });
 }
 
@@ -28,5 +28,5 @@ export const MUSCLE_GROUPS: string[] = [
   'בטן',
   'ישבן',
   'קרדיו',
-  'גוף מלא'
+  'גוף מלא',
 ];

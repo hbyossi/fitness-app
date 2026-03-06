@@ -76,7 +76,16 @@ export type PlanAction =
   | { type: 'IMPORT_PLANS'; payload: Plan[] };
 
 export type HistoryAction =
-  | { type: 'LOG_WORKOUT'; payload: { planId: string; planName: string; workoutName: string; exercises: HistoryExercise[]; duration: number } }
+  | {
+      type: 'LOG_WORKOUT';
+      payload: {
+        planId: string;
+        planName: string;
+        workoutName: string;
+        exercises: HistoryExercise[];
+        duration: number;
+      };
+    }
   | { type: 'DELETE_HISTORY'; payload: string }
   | { type: 'IMPORT_HISTORY'; payload: HistoryEntry[] };
 

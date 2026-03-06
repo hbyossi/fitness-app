@@ -16,42 +16,40 @@ export function plansReducer(state: Plan[], action: PlanAction): Plan[] {
         ...action.payload,
         id: generateId(),
         createdAt: new Date().toISOString(),
-        workouts: action.payload.workouts.map(w => ({ ...w, id: generateId() }))
+        workouts: action.payload.workouts.map((w) => ({ ...w, id: generateId() })),
       };
       return [...state, plan];
     }
     case 'UPDATE_PLAN':
-      return state.map(p =>
-        p.id === action.payload.id ? { ...p, ...action.payload } : p
-      );
+      return state.map((p) => (p.id === action.payload.id ? { ...p, ...action.payload } : p));
     case 'DELETE_PLAN':
-      return state.filter(p => p.id !== action.payload);
+      return state.filter((p) => p.id !== action.payload);
     case 'DUPLICATE_PLAN': {
-      const source = state.find(p => p.id === action.payload);
+      const source = state.find((p) => p.id === action.payload);
       if (!source) return state;
       const dup: Plan = {
         ...source,
         id: generateId(),
         name: source.name + ' (עותק)',
         createdAt: new Date().toISOString(),
-        workouts: source.workouts.map(w => ({
+        workouts: source.workouts.map((w) => ({
           ...w,
           id: generateId(),
-          exercises: w.exercises.map(e => ({ ...e, id: generateId() }))
-        }))
+          exercises: w.exercises.map((e) => ({ ...e, id: generateId() })),
+        })),
       };
       return [...state, dup];
     }
     case 'ADD_EXERCISE': {
       const { planId, workoutId, exercise } = action.payload;
-      return state.map(p => {
+      return state.map((p) => {
         if (p.id !== planId) return p;
         return {
           ...p,
-          workouts: p.workouts.map(w => {
+          workouts: p.workouts.map((w) => {
             if (w.id !== workoutId) return w;
             return { ...w, exercises: [...w.exercises, { ...exercise, id: generateId() }] };
-          })
+          }),
         };
       });
     }
@@ -64,11 +62,7 @@ export function plansReducer(state: Plan[], action: PlanAction): Plan[] {
 
 export function PlansProvider({ children, initialPlans }: { children: React.ReactNode; initialPlans: Plan[] }) {
   const [plans, dispatchPlans] = useReducer(plansReducer, initialPlans);
-  return (
-    <PlansContext.Provider value={{ plans, dispatchPlans }}>
-      {children}
-    </PlansContext.Provider>
-  );
+  return <PlansContext.Provider value={{ plans, dispatchPlans }}>{children}</PlansContext.Provider>;
 }
 
 export function usePlans(): PlansContextType {

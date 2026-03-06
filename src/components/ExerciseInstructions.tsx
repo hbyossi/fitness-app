@@ -9,8 +9,18 @@ interface Section {
 }
 
 const SECTIONS: Section[] = [
-  { key: 'startingPosition', label: 'עמידת מוצא', icon: '🧍', placeholder: 'לדוגמה: עמידה ברוחב כתפיים, ידיים על המוט...' },
-  { key: 'execution', label: 'הוראות ביצוע', icon: '🏋️', placeholder: 'לדוגמה: לרדת לאט עד 90 מעלות, לדחוף חזרה למעלה...' },
+  {
+    key: 'startingPosition',
+    label: 'עמידת מוצא',
+    icon: '🧍',
+    placeholder: 'לדוגמה: עמידה ברוחב כתפיים, ידיים על המוט...',
+  },
+  {
+    key: 'execution',
+    label: 'הוראות ביצוע',
+    icon: '🏋️',
+    placeholder: 'לדוגמה: לרדת לאט עד 90 מעלות, לדחוף חזרה למעלה...',
+  },
   { key: 'tempo', label: 'קצב', icon: '⏱️', placeholder: 'לדוגמה: 3 שניות ירידה, 1 שנייה עצירה, 2 שניות עלייה' },
   { key: 'notes', label: 'דגשים חשובים', icon: '⚠️', placeholder: 'לדוגמה: לשמור על גב ישר, לא לנעול ברכיים...' },
 ];
@@ -18,7 +28,7 @@ const SECTIONS: Section[] = [
 export function hasInstructions(instructions: Instructions | string | undefined | null): boolean {
   if (!instructions) return false;
   if (typeof instructions === 'string') return instructions.trim().length > 0;
-  return Object.values(instructions).some(v => v && v.trim());
+  return Object.values(instructions).some((v) => v && v.trim());
 }
 
 function emptyInstructions(): Instructions {
@@ -42,10 +52,12 @@ export function InstructionsDisplay({ instructions }: { instructions: Instructio
       {SECTIONS.map(({ key, label, icon }) =>
         data[key]?.trim() ? (
           <div key={key} className="instruction-section">
-            <div className="instruction-section-label">{icon} {label}</div>
+            <div className="instruction-section-label">
+              {icon} {label}
+            </div>
             <div className="instruction-section-text">{data[key]}</div>
           </div>
-        ) : null
+        ) : null,
       )}
     </div>
   );
@@ -57,11 +69,7 @@ export function InstructionsToggle({ instructions }: { instructions: Instruction
 
   return (
     <div>
-      <button
-        type="button"
-        className="instructions-link"
-        onClick={() => setOpen(!open)}
-      >
+      <button type="button" className="instructions-link" onClick={() => setOpen(!open)}>
         📋 {open ? 'הסתר הוראות' : 'הצג הוראות'}
       </button>
       {open && <InstructionsDisplay instructions={instructions} />}
@@ -69,7 +77,13 @@ export function InstructionsToggle({ instructions }: { instructions: Instruction
   );
 }
 
-export function InstructionsFields({ value, onChange }: { value: Instructions | string | undefined | null; onChange: (v: Instructions) => void }) {
+export function InstructionsFields({
+  value,
+  onChange,
+}: {
+  value: Instructions | string | undefined | null;
+  onChange: (v: Instructions) => void;
+}) {
   const [open, setOpen] = useState(() => hasInstructions(value));
   const data = normalizeInstructions(value);
 
@@ -91,11 +105,13 @@ export function InstructionsFields({ value, onChange }: { value: Instructions | 
         <div className="instructions-form-sections">
           {SECTIONS.map(({ key, label, icon, placeholder }) => (
             <div key={key} className="form-group">
-              <label className="form-label">{icon} {label}</label>
+              <label className="form-label">
+                {icon} {label}
+              </label>
               <textarea
                 className="form-input"
                 value={data[key] || ''}
-                onChange={e => update(key, e.target.value)}
+                onChange={(e) => update(key, e.target.value)}
                 placeholder={placeholder}
                 rows={2}
               />
