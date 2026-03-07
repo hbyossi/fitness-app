@@ -1,7 +1,14 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { formatTime } from '../utils/helpers';
 
-export default function RestTimer({ defaultSeconds = 90 }: { defaultSeconds?: number }) {
+export default function RestTimer({
+  defaultSeconds = 90,
+  autoStartSignal = 0,
+}: {
+  defaultSeconds?: number;
+  /** Increment this value to auto-start the timer (e.g. when a set is marked done) */
+  autoStartSignal?: number;
+}) {
   const [seconds, setSeconds] = useState(defaultSeconds);
   const [running, setRunning] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -17,6 +24,16 @@ export default function RestTimer({ defaultSeconds = 90 }: { defaultSeconds?: nu
     setRunning(false);
     if (intervalRef.current) clearInterval(intervalRef.current);
   }, []);
+
+  // Auto-start when a set is completed
+  const prevSignal = useRef(autoStartSignal);
+  useEffect(() => {
+    if (autoStartSignal > 0 && autoStartSignal !== prevSignal.current) {
+      prevSignal.current = autoStartSignal;
+      setSeconds(defaultSeconds);
+      setRunning(true);
+    }
+  }, [autoStartSignal, defaultSeconds]);
 
   useEffect(() => {
     if (running && seconds > 0) {

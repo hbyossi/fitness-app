@@ -21,6 +21,10 @@ export default function Navbar() {
           <span className="nav-icon">📊</span>
           <span>היסטוריה</span>
         </NavLink>
+        <NavLink to="/progress" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
+          <span className="nav-icon">📈</span>
+          <span>התקדמות</span>
+        </NavLink>
       </div>
     </nav>
   );

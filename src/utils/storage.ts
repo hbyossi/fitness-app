@@ -146,6 +146,22 @@ export function debouncedSaveData(data: AppState): void {
   saveTimer = setTimeout(() => saveData(data), 300);
 }
 
+// Flush any pending debounced save immediately (e.g. on tab close)
+let lastPendingData: AppState | null = null;
+export function setPendingData(data: AppState): void {
+  lastPendingData = data;
+}
+export function flushPendingSave(): void {
+  if (saveTimer) {
+    clearTimeout(saveTimer);
+    saveTimer = null;
+  }
+  if (lastPendingData) {
+    saveData(lastPendingData);
+    lastPendingData = null;
+  }
+}
+
 export async function getStorageUsage(): Promise<{
   usedBytes: number;
   usedKB: number;

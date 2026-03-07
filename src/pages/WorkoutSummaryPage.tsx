@@ -1,5 +1,6 @@
 import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { useHistory } from '../context/AppProvider';
 import { formatTime } from '../utils/helpers';
 import type { HistoryExercise } from '../types';
 
@@ -12,9 +13,22 @@ interface WorkoutSummary {
 
 export default function WorkoutSummaryPage() {
   const { state: routeState } = useLocation() as { state: { summary?: WorkoutSummary } | null };
+  const { history } = useHistory();
   const navigate = useNavigate();
 
-  if (!routeState?.summary) {
+  // Fall back to the most recent history entry if route state is lost (e.g. refresh)
+  const summary: WorkoutSummary | null = routeState?.summary ?? (() => {
+    if (history.length === 0) return null;
+    const last = history[0];
+    return {
+      workoutName: last.workoutName,
+      planName: last.planName,
+      exercises: last.exercises,
+      duration: last.duration,
+    };
+  })();
+
+  if (!summary) {
     return (
       <div className="empty-state">
         <div className="empty-icon">❌</div>
@@ -26,7 +40,7 @@ export default function WorkoutSummaryPage() {
     );
   }
 
-  const { workoutName, planName, exercises, duration } = routeState.summary;
+  const { workoutName, planName, exercises, duration } = summary;
 
   const completedSets = exercises.reduce((acc, ex) => acc + ex.sets.filter((s) => s.done).length, 0);
   const totalSets = exercises.reduce((acc, ex) => acc + ex.sets.length, 0);

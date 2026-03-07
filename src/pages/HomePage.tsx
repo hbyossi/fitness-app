@@ -2,16 +2,18 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { usePlans, useBank, useImportData } from '../context/AppProvider';
 import ConfirmDialog from '../components/ConfirmDialog';
-import { InstructionsFields, normalizeInstructions } from '../components/ExerciseInstructions';
+import ExerciseForm from '../components/ExerciseForm';
 import { exportData, validateImportData, getStorageUsage } from '../utils/storage';
-import type { Instructions, BankExercise } from '../types';
+import type { Exercise } from '../types';
 
 function StorageUsageBar() {
-  const [usage, setUsage] = useState({ usedKB: 0, percentUsed: 0 });
+  const [usage, setUsage] = useState({ usedKB: 0, percentUsed: 0, estimatedLimitMB: 0 });
   useEffect(() => {
-    getStorageUsage().then(setUsage);
+    getStorageUsage().then((u) =>
+      setUsage({ usedKB: u.usedKB, percentUsed: u.percentUsed, estimatedLimitMB: Math.round(u.estimatedLimit / 1024 / 1024) }),
+    );
   }, []);
-  const { usedKB, percentUsed } = usage;
+  const { usedKB, percentUsed, estimatedLimitMB } = usage;
   const isWarning = percentUsed > 70;
   const isDanger = percentUsed > 90;
   const color = isDanger ? 'var(--danger)' : isWarning ? 'var(--warning)' : 'var(--primary)';
@@ -28,7 +30,7 @@ function StorageUsageBar() {
         }}
       >
         <span>💿 אחסון: {usedKB} KB</span>
-        <span>{percentUsed}% מ-5MB</span>
+        <span>{percentUsed}% מ-{estimatedLimitMB || '?'} MB</span>
       </div>
       <div style={{ height: 6, background: 'var(--bg-input)', borderRadius: 3, overflow: 'hidden' }}>
         <div
@@ -46,123 +48,6 @@ function StorageUsageBar() {
           ⚠️ האחסון כמעט מלא! מומלץ לייצא גיבוי ולמחוק היסטוריה ישנה.
         </div>
       )}
-    </div>
-  );
-}
-
-interface AddExerciseData {
-  name: string;
-  sets: number;
-  reps: number;
-  weight: number;
-  restTime?: number;
-  instructions: Instructions;
-}
-
-function AddExerciseForm({
-  onAdd,
-  onCancel,
-  exerciseBank,
-}: {
-  onAdd: (ex: AddExerciseData) => void;
-  onCancel: () => void;
-  exerciseBank: BankExercise[];
-}) {
-  const [name, setName] = useState('');
-  const [sets, setSets] = useState('3');
-  const [reps, setReps] = useState('12');
-  const [weight, setWeight] = useState('');
-  const [instructions, setInstructions] = useState<Instructions>({
-    startingPosition: '',
-    execution: '',
-    tempo: '',
-    notes: '',
-  });
-  const [bankSearch, setBankSearch] = useState('');
-
-  const handlePickFromBank = (id: string) => {
-    if (!id) return;
-    const ex = exerciseBank.find((e) => e.id === id);
-    if (ex) {
-      setName(ex.name);
-      setInstructions(normalizeInstructions(ex.instructions));
-      if (ex.defaultSets) setSets(String(ex.defaultSets));
-      if (ex.defaultReps) setReps(String(ex.defaultReps));
-      setBankSearch('');
-    }
-  };
-
-  const filteredBank = bankSearch
-    ? exerciseBank.filter((ex) => ex.name.includes(bankSearch) || ex.muscleGroup.includes(bankSearch))
-    : exerciseBank;
-
-  const handleSubmit = () => {
-    if (!name.trim()) return;
-    onAdd({
-      name: name.trim(),
-      sets: parseInt(sets) || 3,
-      reps: parseInt(reps) || 12,
-      weight: parseFloat(weight) || 0,
-      instructions,
-    });
-  };
-
-  return (
-    <div style={{ marginTop: '0.5rem', padding: '0.6rem', background: 'var(--bg-card)', borderRadius: 8 }}>
-      {exerciseBank.length > 0 && (
-        <div className="form-group">
-          <label className="form-label">בחר מהמאגר</label>
-          <input
-            className="form-input"
-            value={bankSearch}
-            onChange={(e) => setBankSearch(e.target.value)}
-            placeholder="חפש תרגיל..."
-            style={{ marginBottom: '0.3rem' }}
-          />
-          <select className="form-select" defaultValue="" onChange={(e) => handlePickFromBank(e.target.value)}>
-            <option value="">-- בחירה חופשית --</option>
-            {filteredBank.map((ex) => (
-              <option key={ex.id} value={ex.id}>
-                {ex.name} ({ex.muscleGroup})
-              </option>
-            ))}
-          </select>
-        </div>
-      )}
-      <div className="form-group">
-        <input className="form-input" value={name} onChange={(e) => setName(e.target.value)} placeholder="שם התרגיל" />
-      </div>
-      <div className="form-row-3">
-        <div className="form-group">
-          <label className="form-label">סטים</label>
-          <input className="form-input" type="number" min="1" value={sets} onChange={(e) => setSets(e.target.value)} />
-        </div>
-        <div className="form-group">
-          <label className="form-label">חזרות</label>
-          <input className="form-input" type="number" min="1" value={reps} onChange={(e) => setReps(e.target.value)} />
-        </div>
-        <div className="form-group">
-          <label className="form-label">משקל (ק&quot;ג)</label>
-          <input
-            className="form-input"
-            type="number"
-            min="0"
-            step="0.5"
-            value={weight}
-            onChange={(e) => setWeight(e.target.value)}
-            placeholder="0"
-          />
-        </div>
-      </div>
-      <InstructionsFields value={instructions} onChange={setInstructions} />
-      <div style={{ display: 'flex', gap: '0.4rem', marginTop: '0.5rem' }}>
-        <button type="button" className="btn btn-success" style={{ flex: 1 }} onClick={handleSubmit}>
-          ✅ הוסף
-        </button>
-        <button type="button" className="btn btn-ghost" onClick={onCancel}>
-          ביטול
-        </button>
-      </div>
     </div>
   );
 }
@@ -204,14 +89,14 @@ export default function HomePage() {
     e.target.value = '';
   };
 
-  const handleAddExercise = (exercise: AddExerciseData) => {
+  const handleAddExercise = (exercise: Exercise) => {
     if (!addingExercise) return;
     dispatchPlans({
       type: 'ADD_EXERCISE',
       payload: {
         planId: addingExercise.planId,
         workoutId: addingExercise.workoutId,
-        exercise: { ...exercise, restTime: exercise.restTime ?? 90 },
+        exercise,
       },
     });
     setAddingExercise(null);
@@ -321,10 +206,11 @@ export default function HomePage() {
                       </div>
                     </div>
                     {addingExercise?.planId === plan.id && addingExercise?.workoutId === workout.id && (
-                      <AddExerciseForm
+                      <ExerciseForm
                         onAdd={handleAddExercise}
                         onCancel={() => setAddingExercise(null)}
                         exerciseBank={exerciseBank}
+                        compact
                       />
                     )}
                   </React.Fragment>

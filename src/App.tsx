@@ -12,6 +12,8 @@ const WorkoutSessionPage = lazy(() => import('./pages/WorkoutSessionPage'));
 const WorkoutSummaryPage = lazy(() => import('./pages/WorkoutSummaryPage'));
 const HistoryPage = lazy(() => import('./pages/HistoryPage'));
 const ExerciseBankPage = lazy(() => import('./pages/ExerciseBankPage'));
+const ProgressPage = lazy(() => import('./pages/ProgressPage'));
+const NotFoundPage = lazy(() => import('./pages/NotFoundPage'));
 
 function PageLoader() {
   return (
@@ -42,6 +44,8 @@ export default function App() {
                   <Route path="/summary" element={<WorkoutSummaryPage />} />
                   <Route path="/history" element={<HistoryPage />} />
                   <Route path="/bank" element={<ExerciseBankPage />} />
+                  <Route path="/progress" element={<ProgressPage />} />
+                  <Route path="*" element={<NotFoundPage />} />
                 </Routes>
               </Suspense>
             </main>

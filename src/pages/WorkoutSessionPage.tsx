@@ -105,6 +105,7 @@ export default function WorkoutSessionPage() {
   });
 
   const [currentExIndex, setCurrentExIndex] = useState(isResume ? saved.current!.currentExIndex : 0);
+  const [restTimerSignal, setRestTimerSignal] = useState(0);
 
   // Persist session to sessionStorage on every change
   useEffect(() => {
@@ -142,7 +143,12 @@ export default function WorkoutSessionPage() {
   const toggleSetDone = (exIdx: number, setIdx: number) => {
     setSession((prev) => {
       const copy = prev.map((ex) => ({ ...ex, sets: ex.sets.map((s) => ({ ...s })) }));
-      copy[exIdx].sets[setIdx].done = !copy[exIdx].sets[setIdx].done;
+      const wasDone = copy[exIdx].sets[setIdx].done;
+      copy[exIdx].sets[setIdx].done = !wasDone;
+      // Auto-start rest timer when marking a set as done
+      if (!wasDone) {
+        setRestTimerSignal((s) => s + 1);
+      }
       // Auto-advance to next exercise if all sets done
       if (copy[exIdx].sets.every((s) => s.done) && exIdx < copy.length - 1) {
         setTimeout(() => setCurrentExIndex(exIdx + 1), 400);
@@ -332,7 +338,7 @@ export default function WorkoutSessionPage() {
         </div>
       )}
 
-      <RestTimer defaultSeconds={currentEx?.restTime || 90} />
+      <RestTimer defaultSeconds={currentEx?.restTime || 90} autoStartSignal={restTimerSignal} />
 
       <button className="btn btn-success btn-full" onClick={finishWorkout} style={{ marginTop: '1rem' }}>
         🏁 סיים אימון ({completedSets}/{totalSets} סטים)

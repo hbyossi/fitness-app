@@ -2,143 +2,15 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { usePlans, useBank } from '../context/AppProvider';
 import { MUSCLE_GROUPS, generateId } from '../utils/helpers';
-import { InstructionsFields, normalizeInstructions } from '../components/ExerciseInstructions';
+import ExerciseForm from '../components/ExerciseForm';
 import SortableExerciseList from '../components/SortableExerciseList';
-import type { Exercise, Instructions, BankExercise } from '../types';
+import type { Exercise } from '../types';
 
 interface TempWorkout {
   tempId: string;
   name: string;
   muscleGroup: string;
   exercises: Exercise[];
-}
-
-function ExerciseForm({ onAdd, exerciseBank }: { onAdd: (ex: Exercise) => void; exerciseBank: BankExercise[] }) {
-  const [exName, setExName] = useState('');
-  const [exSets, setExSets] = useState('3');
-  const [exReps, setExReps] = useState('12');
-  const [exWeight, setExWeight] = useState('');
-  const [exRestTime, setExRestTime] = useState('90');
-  const [exInstructions, setExInstructions] = useState<Instructions>({
-    startingPosition: '',
-    execution: '',
-    tempo: '',
-    notes: '',
-  });
-  const [bankSearch, setBankSearch] = useState('');
-
-  const pickFromBank = (id: string) => {
-    const ex = exerciseBank.find((e) => e.id === id);
-    if (!ex) return;
-    setExName(ex.name);
-    setExInstructions(normalizeInstructions(ex.instructions));
-    setExSets(String(ex.defaultSets || 3));
-    setExReps(String(ex.defaultReps || 12));
-    setBankSearch('');
-  };
-
-  const filteredBank = bankSearch
-    ? exerciseBank.filter((ex) => ex.name.includes(bankSearch) || ex.muscleGroup.includes(bankSearch))
-    : exerciseBank;
-
-  const handleAdd = () => {
-    if (!exName.trim()) return;
-    onAdd({
-      id: generateId(),
-      name: exName.trim(),
-      sets: parseInt(exSets) || 3,
-      reps: parseInt(exReps) || 12,
-      weight: parseFloat(exWeight) || 0,
-      restTime: parseInt(exRestTime) || 90,
-      instructions: exInstructions,
-    });
-    setExName('');
-    setExWeight('');
-    setExRestTime('90');
-    setExInstructions({ startingPosition: '', execution: '', tempo: '', notes: '' });
-  };
-
-  return (
-    <div style={{ marginTop: '0.5rem' }}>
-      {exerciseBank.length > 0 && (
-        <div className="form-group">
-          <label className="form-label">בחר מהמאגר</label>
-          <input
-            className="form-input"
-            value={bankSearch}
-            onChange={(e) => setBankSearch(e.target.value)}
-            placeholder="חפש תרגיל..."
-            style={{ marginBottom: '0.3rem' }}
-          />
-          <select className="form-select" onChange={(e) => pickFromBank(e.target.value)} value="">
-            <option value="">בחר תרגיל...</option>
-            {filteredBank.map((ex) => (
-              <option key={ex.id} value={ex.id}>
-                {ex.name} ({ex.muscleGroup})
-              </option>
-            ))}
-          </select>
-        </div>
-      )}
-      <div className="form-group">
-        <input
-          className="form-input"
-          value={exName}
-          onChange={(e) => setExName(e.target.value)}
-          placeholder="שם התרגיל"
-        />
-      </div>
-      <div className="form-row-3">
-        <div className="form-group">
-          <label className="form-label">סטים</label>
-          <input
-            className="form-input"
-            type="number"
-            min="1"
-            value={exSets}
-            onChange={(e) => setExSets(e.target.value)}
-          />
-        </div>
-        <div className="form-group">
-          <label className="form-label">חזרות</label>
-          <input
-            className="form-input"
-            type="number"
-            min="1"
-            value={exReps}
-            onChange={(e) => setExReps(e.target.value)}
-          />
-        </div>
-        <div className="form-group">
-          <label className="form-label">משקל (ק&quot;ג)</label>
-          <input
-            className="form-input"
-            type="number"
-            min="0"
-            step="0.5"
-            value={exWeight}
-            onChange={(e) => setExWeight(e.target.value)}
-            placeholder="0"
-          />
-        </div>
-      </div>{' '}
-      <div className="form-group">
-        <label className="form-label">⏱️ מנוחה (שניות)</label>
-        <input
-          className="form-input"
-          type="number"
-          min="0"
-          step="5"
-          value={exRestTime}
-          onChange={(e) => setExRestTime(e.target.value)}
-        />
-      </div>{' '}
-      <InstructionsFields value={exInstructions} onChange={setExInstructions} />
-      <button type="button" className="btn btn-primary btn-full" style={{ marginTop: '0.5rem' }} onClick={handleAdd}>
-        ➕ הוסף תרגיל
-      </button>
-    </div>
-  );
 }
 
 export default function CreatePlanPage() {

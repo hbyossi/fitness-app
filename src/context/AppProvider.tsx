@@ -1,11 +1,9 @@
 import React, { useEffect, useRef, useCallback, useState } from 'react';
-import { loadData, debouncedSaveData } from '../utils/storage';
+import { loadData, debouncedSaveData, setPendingData, flushPendingSave } from '../utils/storage';
 import { PlansProvider, usePlans } from './PlansContext';
 import { HistoryProvider, useHistory } from './HistoryContext';
 import { BankProvider, useBank } from './BankContext';
 import type { AppState } from '../types';
-
-const emptyState: AppState = { plans: [], history: [], exerciseBank: [] };
 
 // Inner component that watches all three slices and persists to storage
 function Persister({ children }: { children: React.ReactNode }) {
@@ -20,8 +18,21 @@ function Persister({ children }: { children: React.ReactNode }) {
       isFirst.current = false;
       return;
     }
-    debouncedSaveData({ plans, history, exerciseBank });
+    const data = { plans, history, exerciseBank };
+    setPendingData(data);
+    debouncedSaveData(data);
   }, [plans, history, exerciseBank]);
+
+  // Flush pending save when tab is hidden or closing
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') {
+        flushPendingSave();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, []);
 
   return <>{children}</>;
 }
