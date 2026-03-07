@@ -10,9 +10,11 @@ export interface Exercise {
   name: string;
   sets: number;
   reps: number;
+  repsMax?: number;
   weight: number;
   restTime: number;
   instructions: Instructions;
+  supersetGroup?: string;
 }
 
 export interface Workout {
@@ -59,6 +61,7 @@ export interface BankExercise {
   muscleGroup: string;
   defaultSets: number;
   defaultReps: number;
+  defaultRepsMax?: number;
 }
 
 export interface AppState {
@@ -74,7 +77,8 @@ export type PlanAction =
   | { type: 'DELETE_PLAN'; payload: string }
   | { type: 'DUPLICATE_PLAN'; payload: string }
   | { type: 'ADD_EXERCISE'; payload: { planId: string; workoutId: string; exercise: Omit<Exercise, 'id'> } }
-  | { type: 'IMPORT_PLANS'; payload: Plan[] };
+  | { type: 'IMPORT_PLANS'; payload: Plan[] }
+  | { type: 'RESTORE_PLAN'; payload: Plan };
 
 export type HistoryAction =
   | {
@@ -90,10 +94,12 @@ export type HistoryAction =
     }
   | { type: 'DELETE_HISTORY'; payload: string }
   | { type: 'CLEAR_ALL_HISTORY' }
-  | { type: 'IMPORT_HISTORY'; payload: HistoryEntry[] };
+  | { type: 'IMPORT_HISTORY'; payload: HistoryEntry[] }
+  | { type: 'RESTORE_HISTORY'; payload: { entry: HistoryEntry; index: number } };
 
 export type BankAction =
   | { type: 'ADD_BANK_EXERCISE'; payload: Omit<BankExercise, 'id'> }
   | { type: 'UPDATE_BANK_EXERCISE'; payload: Partial<BankExercise> & { id: string } }
   | { type: 'DELETE_BANK_EXERCISE'; payload: string }
-  | { type: 'IMPORT_BANK'; payload: BankExercise[] };
+  | { type: 'IMPORT_BANK'; payload: BankExercise[] }
+  | { type: 'RESTORE_BANK_EXERCISE'; payload: BankExercise };

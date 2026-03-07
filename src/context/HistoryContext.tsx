@@ -30,6 +30,12 @@ export function historyReducer(state: HistoryEntry[], action: HistoryAction): Hi
       return [];
     case 'IMPORT_HISTORY':
       return action.payload;
+    case 'RESTORE_HISTORY': {
+      const { entry, index } = action.payload;
+      const copy = [...state];
+      copy.splice(index, 0, entry);
+      return copy;
+    }
     default:
       return state;
   }

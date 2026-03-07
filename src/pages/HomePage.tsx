@@ -1,10 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { usePlans, useBank, useImportData } from '../context/AppProvider';
-import ConfirmDialog from '../components/ConfirmDialog';
+import { usePlans, useBank, useHistory, useImportData } from '../context/AppProvider';
+import UndoToast from '../components/UndoToast';
 import ExerciseForm from '../components/ExerciseForm';
 import { exportData, validateImportData, getStorageUsage } from '../utils/storage';
-import type { Exercise } from '../types';
+import type { Exercise, Plan } from '../types';
 
 function StorageUsageBar() {
   const [usage, setUsage] = useState({ usedKB: 0, percentUsed: 0, estimatedLimitMB: 0 });
@@ -55,9 +55,10 @@ function StorageUsageBar() {
 export default function HomePage() {
   const { plans, dispatchPlans } = usePlans();
   const { exerciseBank } = useBank();
+  const { history } = useHistory();
   const importData = useImportData();
   const navigate = useNavigate();
-  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [deletedPlan, setDeletedPlan] = useState<Plan | null>(null);
   const [addingExercise, setAddingExercise] = useState<{ planId: string; workoutId: string } | null>(null);
   const [expandedPlan, setExpandedPlan] = useState<string | null>(null);
   const [planFilter, setPlanFilter] = useState('');
@@ -103,11 +104,40 @@ export default function HomePage() {
     setAddingExercise(null);
   };
 
-  const handleDelete = () => {
-    if (!deleteId) return;
-    dispatchPlans({ type: 'DELETE_PLAN', payload: deleteId });
-    setDeleteId(null);
+  const handleDelete = (planId: string) => {
+    const plan = plans.find((p) => p.id === planId);
+    if (!plan) return;
+    dispatchPlans({ type: 'DELETE_PLAN', payload: planId });
+    setDeletedPlan(plan);
   };
+
+  const handleUndoDelete = () => {
+    if (deletedPlan) {
+      dispatchPlans({ type: 'RESTORE_PLAN', payload: deletedPlan });
+      setDeletedPlan(null);
+    }
+  };
+
+  // Next workout suggestion: find least recently done workout across all plans
+  const nextWorkout = (() => {
+    if (plans.length === 0) return null;
+    let best: { planId: string; planName: string; workoutId: string; workoutName: string; daysAgo: number | null } | null = null;
+    for (const plan of plans) {
+      for (const workout of plan.workouts) {
+        const lastEntry = history.find(
+          (h) => h.planId === plan.id && h.workoutName === workout.name,
+        );
+        const daysAgo = lastEntry
+          ? Math.floor((Date.now() - new Date(lastEntry.date).getTime()) / (1000 * 60 * 60 * 24))
+          : null;
+        // Prefer never-done workouts (daysAgo=null), then oldest
+        if (!best || (best.daysAgo !== null && (daysAgo === null || daysAgo > best.daysAgo))) {
+          best = { planId: plan.id, planName: plan.name, workoutId: workout.id, workoutName: workout.name, daysAgo };
+        }
+      }
+    }
+    return best;
+  })();
 
   return (
     <div>
@@ -115,6 +145,29 @@ export default function HomePage() {
         <h1 className="page-title">התוכניות שלי</h1>
         <span className="badge badge-primary">{plans.length} תוכניות</span>
       </div>
+
+      {/* Next Workout Suggestion */}
+      {nextWorkout && plans.length > 0 && (
+        <div className="next-workout-card">
+          <div style={{ fontSize: '0.8rem', opacity: 0.8, marginBottom: '0.3rem' }}>
+            🎯 האימון הבא שלך
+          </div>
+          <div style={{ fontSize: '1.1rem', fontWeight: 700, marginBottom: '0.15rem' }}>
+            {nextWorkout.workoutName}
+          </div>
+          <div style={{ fontSize: '0.8rem', opacity: 0.7, marginBottom: '0.6rem' }}>
+            {nextWorkout.planName}
+            {nextWorkout.daysAgo !== null ? ` · לפני ${nextWorkout.daysAgo} ימים` : ' · טרם בוצע'}
+          </div>
+          <Link
+            to={`/workout/${nextWorkout.planId}/${nextWorkout.workoutId}`}
+            className="btn"
+            style={{ background: 'rgba(255,255,255,0.2)', fontSize: '0.85rem', padding: '0.5rem 1rem' }}
+          >
+            🏋️ התחל אימון
+          </Link>
+        </div>
+      )}
 
       {plans.length === 0 ? (
         <div className="empty-state">
@@ -157,7 +210,7 @@ export default function HomePage() {
                 <button className="btn btn-ghost" onClick={() => navigate(`/edit/${plan.id}`)} title="ערוך">
                   ✏️
                 </button>
-                <button className="btn btn-ghost" onClick={() => setDeleteId(plan.id)} title="מחק">
+                <button className="btn btn-ghost" onClick={() => handleDelete(plan.id)} title="מחק">
                   🗑️
                 </button>
               </div>
@@ -258,12 +311,11 @@ export default function HomePage() {
         <input ref={fileInputRef} type="file" accept=".json" style={{ display: 'none' }} onChange={handleImport} />
       </div>
 
-      {deleteId && (
-        <ConfirmDialog
-          title="מחיקת תוכנית"
-          text="האם למחוק את התוכנית? לא ניתן לשחזר."
-          onConfirm={handleDelete}
-          onCancel={() => setDeleteId(null)}
+      {deletedPlan && (
+        <UndoToast
+          message={`התוכנית "${deletedPlan.name}" נמחקה`}
+          onUndo={handleUndoDelete}
+          onDismiss={() => setDeletedPlan(null)}
         />
       )}
     </div>

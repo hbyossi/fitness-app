@@ -55,6 +55,8 @@ export function plansReducer(state: Plan[], action: PlanAction): Plan[] {
     }
     case 'IMPORT_PLANS':
       return action.payload;
+    case 'RESTORE_PLAN':
+      return [...state, action.payload];
     default:
       return state;
   }

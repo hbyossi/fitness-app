@@ -11,6 +11,7 @@ import {
 import { SortableContext, verticalListSortingStrategy, useSortable, arrayMove } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { InstructionsToggle, hasInstructions } from './ExerciseInstructions';
+import { formatReps, parseReps, generateId } from '../utils/helpers';
 import type { Exercise } from '../types';
 
 interface SortableExerciseProps {
@@ -23,7 +24,7 @@ function SortableExercise({ ex, onRemove, onUpdate }: SortableExerciseProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: ex.id });
   const [editing, setEditing] = useState(false);
   const [editSets, setEditSets] = useState(String(ex.sets));
-  const [editReps, setEditReps] = useState(String(ex.reps));
+  const [editReps, setEditReps] = useState(formatReps(ex.reps, ex.repsMax));
   const [editWeight, setEditWeight] = useState(String(ex.weight || 0));
   const [editRestTime, setEditRestTime] = useState(String(ex.restTime || 90));
 
@@ -34,9 +35,11 @@ function SortableExercise({ ex, onRemove, onUpdate }: SortableExerciseProps) {
   };
 
   const saveEdit = () => {
+    const { reps, repsMax } = parseReps(editReps);
     onUpdate(ex.id, {
       sets: parseInt(editSets) || 3,
-      reps: parseInt(editReps) || 12,
+      reps,
+      repsMax: repsMax || undefined,
       weight: parseFloat(editWeight) || 0,
       restTime: parseInt(editRestTime) || 90,
     });
@@ -63,12 +66,11 @@ function SortableExercise({ ex, onRemove, onUpdate }: SortableExerciseProps) {
             />
             <input
               className="form-input"
-              type="number"
-              min="1"
+              type="text"
               value={editReps}
               onChange={(e) => setEditReps(e.target.value)}
-              style={{ width: 60, padding: '0.3rem' }}
-              placeholder="חזרות"
+              style={{ width: 70, padding: '0.3rem' }}
+              placeholder="8-12"
             />
             <input
               className="form-input"
@@ -110,7 +112,7 @@ function SortableExercise({ ex, onRemove, onUpdate }: SortableExerciseProps) {
         ) : (
           <>
             <div className="exercise-detail">
-              {ex.sets} סטים × {ex.reps} חזרות{ex.weight > 0 && ` · ${ex.weight} ק"ג`}
+              {ex.sets} סטים × {formatReps(ex.reps, ex.repsMax)} חזרות{ex.weight > 0 && ` · ${ex.weight} ק"ג`}
               {ex.restTime && ex.restTime !== 90 && ` · מנוחה ${ex.restTime}ש'`}
             </div>
             {hasInstructions(ex.instructions) && <InstructionsToggle instructions={ex.instructions} />}
@@ -146,9 +148,10 @@ interface SortableExerciseListProps {
   onReorder: (exercises: Exercise[]) => void;
   onRemove: (id: string) => void;
   onUpdate: (id: string, updates: Partial<Exercise>) => void;
+  showSupersetLinks?: boolean;
 }
 
-export default function SortableExerciseList({ exercises, onReorder, onRemove, onUpdate }: SortableExerciseListProps) {
+export default function SortableExerciseList({ exercises, onReorder, onRemove, onUpdate, showSupersetLinks }: SortableExerciseListProps) {
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
     useSensor(TouchSensor, { activationConstraint: { delay: 150, tolerance: 5 } }),
@@ -164,12 +167,60 @@ export default function SortableExerciseList({ exercises, onReorder, onRemove, o
 
   if (exercises.length === 0) return null;
 
+  const toggleSuperset = (idx: number) => {
+    const exA = exercises[idx];
+    const exB = exercises[idx + 1];
+    if (!exA || !exB) return;
+    if (exA.supersetGroup && exA.supersetGroup === exB.supersetGroup) {
+      // Unlink: remove group from B (and from A if it was only linked to B)
+      const groupMembers = exercises.filter((e) => e.supersetGroup === exA.supersetGroup);
+      if (groupMembers.length <= 2) {
+        onUpdate(exA.id, { supersetGroup: undefined });
+        onUpdate(exB.id, { supersetGroup: undefined });
+      } else {
+        onUpdate(exB.id, { supersetGroup: undefined });
+      }
+    } else {
+      // Link: use existing group or create new one
+      const group = exA.supersetGroup || exB.supersetGroup || generateId();
+      onUpdate(exA.id, { supersetGroup: group });
+      onUpdate(exB.id, { supersetGroup: group });
+    }
+  };
+
   return (
     <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
       <SortableContext items={exercises.map((e) => e.id)} strategy={verticalListSortingStrategy}>
-        {exercises.map((ex) => (
-          <SortableExercise key={ex.id} ex={ex} onRemove={onRemove} onUpdate={onUpdate} />
-        ))}
+        {exercises.map((ex, idx) => {
+          const isFirstInGroup =
+            ex.supersetGroup && (idx === 0 || exercises[idx - 1].supersetGroup !== ex.supersetGroup);
+          const isInGroup = !!ex.supersetGroup;
+          const isLastInGroup =
+            ex.supersetGroup &&
+            (idx === exercises.length - 1 || exercises[idx + 1].supersetGroup !== ex.supersetGroup);
+          const showLink = showSupersetLinks && idx < exercises.length - 1;
+          const isLinked =
+            ex.supersetGroup && idx < exercises.length - 1 && exercises[idx + 1].supersetGroup === ex.supersetGroup;
+
+          return (
+            <React.Fragment key={ex.id}>
+              {isFirstInGroup && <div className="superset-label">🔗 סופרסט</div>}
+              <div className={isInGroup ? 'superset-group' : ''} style={!isLastInGroup && isInGroup ? { marginBottom: 0, paddingBottom: 0 } : {}}>
+                <SortableExercise ex={ex} onRemove={onRemove} onUpdate={onUpdate} />
+              </div>
+              {showLink && (
+                <button
+                  type="button"
+                  className={`superset-link-btn ${isLinked ? 'linked' : ''}`}
+                  onClick={() => toggleSuperset(idx)}
+                  title={isLinked ? 'הסר סופרסט' : 'צור סופרסט'}
+                >
+                  {isLinked ? '🔗 סופרסט' : '⋯ קשר סופרסט'}
+                </button>
+              )}
+            </React.Fragment>
+          );
+        })}
       </SortableContext>
     </DndContext>
   );

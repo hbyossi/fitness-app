@@ -2,6 +2,7 @@ import React from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { usePlans } from '../context/AppProvider';
 import { InstructionsToggle, hasInstructions } from '../components/ExerciseInstructions';
+import { formatReps } from '../utils/helpers';
 
 export default function ViewPlanPage() {
   const { planId } = useParams();
@@ -57,20 +58,30 @@ export default function ViewPlanPage() {
             </Link>
           </div>
 
-          {workout.exercises.map((ex, idx) => (
-            <div key={ex.id} className="exercise-item">
-              <div className="exercise-info">
-                <div className="exercise-name">
-                  <span style={{ color: 'var(--text-muted)', marginLeft: '0.4rem' }}>{idx + 1}.</span>
-                  {ex.name}
+          {workout.exercises.map((ex, idx) => {
+            const isFirstInGroup =
+              ex.supersetGroup && (idx === 0 || workout.exercises[idx - 1].supersetGroup !== ex.supersetGroup);
+            const isInGroup = !!ex.supersetGroup;
+            return (
+            <React.Fragment key={ex.id}>
+              {isFirstInGroup && <div className="superset-label" style={{ marginTop: '0.5rem' }}>🔗 סופרסט</div>}
+              <div className={isInGroup ? 'superset-group' : ''}>
+              <div className="exercise-item">
+                <div className="exercise-info">
+                  <div className="exercise-name">
+                    <span style={{ color: 'var(--text-muted)', marginLeft: '0.4rem' }}>{idx + 1}.</span>
+                    {ex.name}
+                  </div>
+                  <div className="exercise-detail">
+                    {ex.sets} סטים × {formatReps(ex.reps, ex.repsMax)} חזרות{ex.weight > 0 && ` · ${ex.weight} ק"ג`}
+                  </div>
+                  {hasInstructions(ex.instructions) && <InstructionsToggle instructions={ex.instructions} />}
                 </div>
-                <div className="exercise-detail">
-                  {ex.sets} סטים × {ex.reps} חזרות{ex.weight > 0 && ` · ${ex.weight} ק"ג`}
-                </div>
-                {hasInstructions(ex.instructions) && <InstructionsToggle instructions={ex.instructions} />}
               </div>
-            </div>
-          ))}
+              </div>
+            </React.Fragment>
+            );
+          })}
         </div>
       ))}
     </div>

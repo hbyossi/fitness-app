@@ -17,6 +17,7 @@ interface SessionExercise {
   name: string;
   instructions: Instructions | string;
   restTime: number;
+  supersetGroup?: string;
   sets: SessionSet[];
 }
 
@@ -111,6 +112,7 @@ export default function WorkoutSessionPage() {
         name: ex.name,
         instructions: ex.instructions || '',
         restTime: ex.restTime || 90,
+        supersetGroup: ex.supersetGroup,
         sets: Array.from({ length: ex.sets }, (_, i) => ({
           setNum: i + 1,
           weight: lastSets?.[i]?.weight ?? (ex.weight || 0),
@@ -163,9 +165,14 @@ export default function WorkoutSessionPage() {
       const copy = prev.map((ex) => ({ ...ex, sets: ex.sets.map((s) => ({ ...s })) }));
       const wasDone = copy[exIdx].sets[setIdx].done;
       copy[exIdx].sets[setIdx].done = !wasDone;
-      // Auto-start rest timer when marking a set as done
+      // Auto-start rest timer when marking a set as done (skip if next exercise is in same superset)
       if (!wasDone) {
-        setRestTimerSignal((s) => s + 1);
+        const inSuperset = copy[exIdx].supersetGroup &&
+          exIdx < copy.length - 1 &&
+          copy[exIdx + 1].supersetGroup === copy[exIdx].supersetGroup;
+        if (!inSuperset) {
+          setRestTimerSignal((s) => s + 1);
+        }
       }
       // Auto-advance to next exercise if all sets done
       if (copy[exIdx].sets.every((s) => s.done) && exIdx < copy.length - 1) {
@@ -285,12 +292,13 @@ export default function WorkoutSessionPage() {
       </div>
 
       {/* Exercise navigation */}
-      <div style={{ display: 'flex', gap: '0.4rem', marginBottom: '1rem', overflowX: 'auto', paddingBottom: '0.3rem' }}>
+      <div style={{ display: 'flex', gap: '0.2rem', marginBottom: '1rem', overflowX: 'auto', paddingBottom: '0.3rem', alignItems: 'center' }}>
         {session.map((ex, i) => {
           const allDone = ex.sets.every((s) => s.done);
+          const isLinkedToNext = ex.supersetGroup && i < session.length - 1 && session[i + 1].supersetGroup === ex.supersetGroup;
           return (
+            <React.Fragment key={i}>
             <button
-              key={i}
               className="btn"
               onClick={() => setCurrentExIndex(i)}
               style={{
@@ -303,6 +311,8 @@ export default function WorkoutSessionPage() {
             >
               {ex.name}
             </button>
+            {isLinkedToNext && <span style={{ fontSize: '0.7rem', color: 'var(--primary-light)', flexShrink: 0 }}>🔗</span>}
+            </React.Fragment>
           );
         })}
       </div>
@@ -310,6 +320,9 @@ export default function WorkoutSessionPage() {
       {/* Current exercise sets */}
       {currentEx && (
         <div className="card">
+          {currentEx.supersetGroup && (
+            <div style={{ fontSize: '0.7rem', color: 'var(--primary-light)', marginBottom: '0.3rem', fontWeight: 600 }}>🔗 סופרסט</div>
+          )}
           <div className="card-title" style={{ marginBottom: '0.3rem' }}>
             {currentEx.name}
             {currentExHasPR && (

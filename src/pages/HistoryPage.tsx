@@ -1,24 +1,41 @@
 import React, { useState } from 'react';
 import { useHistory } from '../context/AppProvider';
 import { formatTime } from '../utils/helpers';
-import ConfirmDialog from '../components/ConfirmDialog';
+import UndoToast from '../components/UndoToast';
 import type { HistoryEntry } from '../types';
 
 export default function HistoryPage() {
   const { history, dispatchHistory } = useHistory();
-  const [deleteId, setDeleteId] = useState<string | null>(null);
-  const [clearAll, setClearAll] = useState(false);
+  const [deletedEntry, setDeletedEntry] = useState<{ entry: HistoryEntry; index: number } | null>(null);
+  const [deletedAll, setDeletedAll] = useState<HistoryEntry[] | null>(null);
   const [dateFilter, setDateFilter] = useState<'all' | '7' | '30' | '90'>('all');
 
-  const handleDelete = () => {
-    if (!deleteId) return;
-    dispatchHistory({ type: 'DELETE_HISTORY', payload: deleteId });
-    setDeleteId(null);
+  const handleDelete = (id: string) => {
+    const idx = history.findIndex((h) => h.id === id);
+    if (idx === -1) return;
+    const entry = history[idx];
+    dispatchHistory({ type: 'DELETE_HISTORY', payload: id });
+    setDeletedEntry({ entry, index: idx });
+  };
+
+  const handleUndoDelete = () => {
+    if (deletedEntry) {
+      dispatchHistory({ type: 'RESTORE_HISTORY', payload: deletedEntry });
+      setDeletedEntry(null);
+    }
   };
 
   const handleClearAll = () => {
+    if (!window.confirm(`האם למחוק את כל ${history.length} האימונים?`)) return;
+    setDeletedAll([...history]);
     dispatchHistory({ type: 'CLEAR_ALL_HISTORY' });
-    setClearAll(false);
+  };
+
+  const handleUndoClearAll = () => {
+    if (deletedAll) {
+      dispatchHistory({ type: 'IMPORT_HISTORY', payload: deletedAll });
+      setDeletedAll(null);
+    }
   };
 
   // Date filter
@@ -56,7 +73,7 @@ export default function HistoryPage() {
         <div style={{ display: 'flex', gap: '0.3rem', alignItems: 'center' }}>
           <span className="badge badge-primary">{history.length} אימונים</span>
           {history.length > 0 && (
-            <button className="btn btn-ghost" onClick={() => setClearAll(true)} title="מחק הכל" style={{ fontSize: '0.75rem' }}>
+            <button className="btn btn-ghost" onClick={handleClearAll} title="מחק הכל" style={{ fontSize: '0.75rem' }}>
               🗑️
             </button>
           )}
@@ -137,7 +154,7 @@ export default function HistoryPage() {
                         ק"ג
                       </div>
                     </div>
-                    <button className="btn btn-ghost" onClick={() => setDeleteId(entry.id)}>
+                    <button className="btn btn-ghost" onClick={() => handleDelete(entry.id)}>
                       🗑️
                     </button>
                   </div>
@@ -165,21 +182,19 @@ export default function HistoryPage() {
         ))
       )}
 
-      {deleteId && (
-        <ConfirmDialog
-          title="מחיקת אימון"
-          text="האם למחוק את רשומת האימון?"
-          onConfirm={handleDelete}
-          onCancel={() => setDeleteId(null)}
+      {deletedEntry && (
+        <UndoToast
+          message="רשומת אימון נמחקה"
+          onUndo={handleUndoDelete}
+          onDismiss={() => setDeletedEntry(null)}
         />
       )}
 
-      {clearAll && (
-        <ConfirmDialog
-          title="מחיקת כל ההיסטוריה"
-          text={`האם למחוק את כל ${history.length} האימונים? לא ניתן לשחזר.`}
-          onConfirm={handleClearAll}
-          onCancel={() => setClearAll(false)}
+      {deletedAll && (
+        <UndoToast
+          message={`${deletedAll.length} אימונים נמחקו`}
+          onUndo={handleUndoClearAll}
+          onDismiss={() => setDeletedAll(null)}
         />
       )}
     </div>

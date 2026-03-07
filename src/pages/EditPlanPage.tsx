@@ -148,6 +148,7 @@ export default function EditPlanPage() {
               onReorder={(newExercises) => reorderExercises(wIdx, newExercises)}
               onRemove={(exId) => removeExercise(wIdx, exId)}
               onUpdate={(exId, updates) => updateExercise(wIdx, exId, updates)}
+              showSupersetLinks
             />
 
             {editingWorkoutIdx === wIdx && (

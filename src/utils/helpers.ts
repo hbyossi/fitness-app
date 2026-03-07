@@ -30,3 +30,20 @@ export const MUSCLE_GROUPS: string[] = [
   'קרדיו',
   'גוף מלא',
 ];
+
+export function formatReps(reps: number, repsMax?: number): string {
+  if (repsMax && repsMax > reps) return `${reps}-${repsMax}`;
+  return String(reps);
+}
+
+export function parseReps(value: string): { reps: number; repsMax?: number } {
+  const trimmed = value.trim();
+  const match = trimmed.match(/^(\d+)\s*[-–]\s*(\d+)$/);
+  if (match) {
+    const min = parseInt(match[1]);
+    const max = parseInt(match[2]);
+    if (min > 0 && max > min) return { reps: min, repsMax: max };
+  }
+  const num = parseInt(trimmed);
+  return { reps: num > 0 ? num : 12 };
+}

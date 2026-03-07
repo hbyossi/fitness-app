@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useBank } from '../context/AppProvider';
-import { MUSCLE_GROUPS } from '../utils/helpers';
-import ConfirmDialog from '../components/ConfirmDialog';
+import { MUSCLE_GROUPS, formatReps, parseReps } from '../utils/helpers';
+import UndoToast from '../components/UndoToast';
 import {
   InstructionsFields,
   InstructionsToggle,
@@ -37,12 +37,13 @@ export default function ExerciseBankPage() {
   const [editSets, setEditSets] = useState('');
   const [editReps, setEditReps] = useState('');
 
-  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [deletedExercise, setDeletedExercise] = useState<BankExercise | null>(null);
   const [filter, setFilter] = useState('');
 
   const handleAdd = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return;
+    const { reps, repsMax } = parseReps(defaultReps);
     dispatchBank({
       type: 'ADD_BANK_EXERCISE',
       payload: {
@@ -50,7 +51,8 @@ export default function ExerciseBankPage() {
         instructions,
         muscleGroup,
         defaultSets: parseInt(defaultSets) || 3,
-        defaultReps: parseInt(defaultReps) || 12,
+        defaultReps: reps,
+        ...(repsMax ? { defaultRepsMax: repsMax } : {}),
       },
     });
     setName('');
@@ -65,11 +67,12 @@ export default function ExerciseBankPage() {
     setEditInstructions(normalizeInstructions(ex.instructions));
     setEditMuscle(ex.muscleGroup);
     setEditSets(String(ex.defaultSets || 3));
-    setEditReps(String(ex.defaultReps || 12));
+    setEditReps(formatReps(ex.defaultReps || 12, ex.defaultRepsMax));
   };
 
   const saveEdit = () => {
     if (!editName.trim() || !editingId) return;
+    const { reps, repsMax } = parseReps(editReps);
     dispatchBank({
       type: 'UPDATE_BANK_EXERCISE',
       payload: {
@@ -78,16 +81,25 @@ export default function ExerciseBankPage() {
         instructions: editInstructions,
         muscleGroup: editMuscle,
         defaultSets: parseInt(editSets) || 3,
-        defaultReps: parseInt(editReps) || 12,
+        defaultReps: reps,
+        ...(repsMax ? { defaultRepsMax: repsMax } : {}),
       },
     });
     setEditingId(null);
   };
 
-  const handleDelete = () => {
-    if (!deleteId) return;
-    dispatchBank({ type: 'DELETE_BANK_EXERCISE', payload: deleteId });
-    setDeleteId(null);
+  const handleDelete = (id: string) => {
+    const ex = bank.find((e) => e.id === id);
+    if (!ex) return;
+    dispatchBank({ type: 'DELETE_BANK_EXERCISE', payload: id });
+    setDeletedExercise(ex);
+  };
+
+  const handleUndoDelete = () => {
+    if (deletedExercise) {
+      dispatchBank({ type: 'RESTORE_BANK_EXERCISE', payload: deletedExercise });
+      setDeletedExercise(null);
+    }
   };
 
   const filtered = filter ? bank.filter((ex) => ex.muscleGroup === filter) : bank;
@@ -138,10 +150,10 @@ export default function ExerciseBankPage() {
             <label className="form-label">חזרות ברירת מחדל</label>
             <input
               className="form-input"
-              type="number"
-              min="1"
+              type="text"
               value={defaultReps}
               onChange={(e) => setDefaultReps(e.target.value)}
+              placeholder="12 או 8-12"
             />
           </div>
         </div>
@@ -224,10 +236,10 @@ export default function ExerciseBankPage() {
                   <label className="form-label">חזרות</label>
                   <input
                     className="form-input"
-                    type="number"
-                    min="1"
+                    type="text"
                     value={editReps}
                     onChange={(e) => setEditReps(e.target.value)}
+                    placeholder="8-12"
                   />
                 </div>
               </div>
@@ -247,14 +259,14 @@ export default function ExerciseBankPage() {
                 <div>
                   <div className="card-title">{ex.name}</div>
                   <div className="card-subtitle">
-                    {ex.muscleGroup} · {ex.defaultSets || 3}×{ex.defaultReps || 12}
+                    {ex.muscleGroup} · {ex.defaultSets || 3}×{formatReps(ex.defaultReps || 12, ex.defaultRepsMax)}
                   </div>
                 </div>
                 <div style={{ display: 'flex', gap: '0.3rem' }}>
                   <button className="btn btn-ghost" onClick={() => startEdit(ex)}>
                     ✏️
                   </button>
-                  <button className="btn btn-ghost" onClick={() => setDeleteId(ex.id)}>
+                  <button className="btn btn-ghost" onClick={() => handleDelete(ex.id)}>
                     🗑️
                   </button>
                 </div>
@@ -276,12 +288,11 @@ export default function ExerciseBankPage() {
         </div>
       )}
 
-      {deleteId && (
-        <ConfirmDialog
-          title="מחיקת תרגיל"
-          text="האם למחוק את התרגיל מהמאגר?"
-          onConfirm={handleDelete}
-          onCancel={() => setDeleteId(null)}
+      {deletedExercise && (
+        <UndoToast
+          message={`"${deletedExercise.name}" נמחק מהמאגר`}
+          onUndo={handleUndoDelete}
+          onDismiss={() => setDeletedExercise(null)}
         />
       )}
     </div>

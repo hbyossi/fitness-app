@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { generateId } from '../utils/helpers';
+import { generateId, formatReps, parseReps } from '../utils/helpers';
 import { InstructionsFields, normalizeInstructions } from './ExerciseInstructions';
 import type { Exercise, Instructions, BankExercise } from '../types';
 
@@ -32,7 +32,7 @@ export default function ExerciseForm({ onAdd, exerciseBank, compact, onCancel }:
     setExName(ex.name);
     setExInstructions(normalizeInstructions(ex.instructions));
     setExSets(String(ex.defaultSets || 3));
-    setExReps(String(ex.defaultReps || 12));
+    setExReps(formatReps(ex.defaultReps || 12, ex.defaultRepsMax));
     setBankSearch('');
   };
 
@@ -42,11 +42,13 @@ export default function ExerciseForm({ onAdd, exerciseBank, compact, onCancel }:
 
   const handleAdd = () => {
     if (!exName.trim()) return;
+    const { reps, repsMax } = parseReps(exReps);
     onAdd({
       id: generateId(),
       name: exName.trim(),
       sets: parseInt(exSets) || 3,
-      reps: parseInt(exReps) || 12,
+      reps,
+      ...(repsMax ? { repsMax } : {}),
       weight: parseFloat(exWeight) || 0,
       restTime: parseInt(exRestTime) || 90,
       instructions: exInstructions,
@@ -108,10 +110,10 @@ export default function ExerciseForm({ onAdd, exerciseBank, compact, onCancel }:
           <label className="form-label">חזרות</label>
           <input
             className="form-input"
-            type="number"
-            min="1"
+            type="text"
             value={exReps}
             onChange={(e) => setExReps(e.target.value)}
+            placeholder="12 או 8-12"
           />
         </div>
         <div className="form-group">
