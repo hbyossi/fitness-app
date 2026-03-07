@@ -1,5 +1,6 @@
 import React, { Suspense, lazy } from 'react';
 import { HashRouter, Routes, Route } from 'react-router-dom';
+import { AuthProvider } from './context/AuthContext';
 import { AppProvider } from './context/AppProvider';
 import ErrorBoundary from './components/ErrorBoundary';
 import Navbar from './components/Navbar';
@@ -29,8 +30,9 @@ function PageLoader() {
 export default function App() {
   return (
     <ErrorBoundary>
-      <AppProvider>
-        <HashRouter>
+      <AuthProvider>
+        <AppProvider>
+          <HashRouter>
           <div className="app">
             <Navbar />
             <main className="main-content">
@@ -50,8 +52,9 @@ export default function App() {
               </Suspense>
             </main>
           </div>
-        </HashRouter>
-      </AppProvider>
+          </HashRouter>
+        </AppProvider>
+      </AuthProvider>
     </ErrorBoundary>
   );
 }
