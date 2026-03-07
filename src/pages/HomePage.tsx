@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { usePlans, useBank, useImportData } from '../context/AppProvider';
 import ConfirmDialog from '../components/ConfirmDialog';
@@ -7,7 +7,11 @@ import { exportData, validateImportData, getStorageUsage } from '../utils/storag
 import type { Instructions, BankExercise } from '../types';
 
 function StorageUsageBar() {
-  const { usedKB, percentUsed } = getStorageUsage();
+  const [usage, setUsage] = useState({ usedKB: 0, percentUsed: 0 });
+  useEffect(() => {
+    getStorageUsage().then(setUsage);
+  }, []);
+  const { usedKB, percentUsed } = usage;
   const isWarning = percentUsed > 70;
   const isDanger = percentUsed > 90;
   const color = isDanger ? 'var(--danger)' : isWarning ? 'var(--warning)' : 'var(--primary)';
@@ -341,7 +345,7 @@ export default function HomePage() {
         </div>
         <StorageUsageBar />
         <div style={{ display: 'flex', gap: '0.5rem' }}>
-          <button className="btn btn-primary" style={{ flex: 1 }} onClick={exportData}>
+          <button className="btn btn-primary" style={{ flex: 1 }} onClick={() => exportData()}>
             📤 ייצוא גיבוי
           </button>
           <button

@@ -1,6 +1,11 @@
+import { openDB, type IDBPDatabase } from 'idb';
 import type { AppState } from '../types';
 
-const STORAGE_KEY = 'fitness_app_data';
+const DB_NAME = 'fitness_app';
+const DB_VERSION = 1;
+const STORE_NAME = 'state';
+const STATE_KEY = 'appState';
+const LS_KEY = 'fitness_app_data';
 const CURRENT_VERSION = 3;
 
 const emptyState: AppState = { _version: CURRENT_VERSION, plans: [], history: [], exerciseBank: [] };
@@ -51,45 +56,87 @@ function runMigrations(data: any): AppState {
   return data;
 }
 
-export function loadData(): AppState {
+// --- IndexedDB via idb ---
+
+let dbPromise: Promise<IDBPDatabase> | null = null;
+
+function getDb(): Promise<IDBPDatabase> {
+  if (!dbPromise) {
+    dbPromise = openDB(DB_NAME, DB_VERSION, {
+      upgrade(db) {
+        if (!db.objectStoreNames.contains(STORE_NAME)) {
+          db.createObjectStore(STORE_NAME);
+        }
+      },
+    });
+  }
+  return dbPromise;
+}
+
+// Test helper: close DB and reset cached promise so next call opens fresh
+export async function _resetDbForTests(): Promise<void> {
+  if (dbPromise) {
+    const db = await dbPromise;
+    // Clear all data from the store
+    const tx = db.transaction(STORE_NAME, 'readwrite');
+    await tx.objectStore(STORE_NAME).clear();
+    await tx.done;
+    db.close();
+    dbPromise = null;
+  }
+}
+
+// Migrate from localStorage → IndexedDB on first run
+async function migrateFromLocalStorage(): Promise<AppState | null> {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return { ...emptyState };
+    const raw = localStorage.getItem(LS_KEY);
+    if (!raw) return null;
     const data = JSON.parse(raw);
-    if (!data || typeof data !== 'object' || !Array.isArray(data.plans)) {
-      console.error('Corrupt data detected, structure invalid');
-      alert('אוהזרה: נתונים פגומים זוהו באחסון. הנתונים אופסו.');
-      return { ...emptyState };
-    }
+    if (!data || typeof data !== 'object' || !Array.isArray(data.plans)) return null;
     const migrated = runMigrations(data);
-    // Save migrated data if version changed
-    if ((data._version || 0) < CURRENT_VERSION) {
-      try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(migrated));
-      } catch {
-        /* quota exceeded */
-      }
-    }
+    // Save to IndexedDB and remove localStorage copy
+    const db = await getDb();
+    await db.put(STORE_NAME, migrated, STATE_KEY);
+    localStorage.removeItem(LS_KEY);
+    console.log('Migrated data from localStorage to IndexedDB');
     return migrated;
+  } catch {
+    return null;
+  }
+}
+
+export async function loadData(): Promise<AppState> {
+  try {
+    const db = await getDb();
+    const data = await db.get(STORE_NAME, STATE_KEY);
+    if (data && typeof data === 'object' && Array.isArray(data.plans)) {
+      const migrated = runMigrations(data);
+      if ((data._version || 0) < CURRENT_VERSION) {
+        await db.put(STORE_NAME, migrated, STATE_KEY);
+      }
+      return migrated;
+    }
+    // Try migrating from localStorage
+    const fromLS = await migrateFromLocalStorage();
+    if (fromLS) return fromLS;
+    return { ...emptyState };
   } catch (e) {
-    console.error('Failed to parse stored data:', e);
-    alert('שגיאה בקריאת נתונים מהאחסון. הנתונים אופסו. מומלץ לייבא גיבוי.');
+    console.error('Failed to load from IndexedDB:', e);
+    // Fallback: try localStorage
+    const fromLS = await migrateFromLocalStorage();
+    if (fromLS) return fromLS;
     return { ...emptyState };
   }
 }
 
-export function saveData(data: AppState): void {
+export async function saveData(data: AppState): Promise<void> {
   try {
     data._version = CURRENT_VERSION;
-    const json = JSON.stringify(data);
-    localStorage.setItem(STORAGE_KEY, json);
+    const db = await getDb();
+    await db.put(STORE_NAME, data, STATE_KEY);
   } catch (e: unknown) {
     console.error('Failed to save data:', e);
-    if (e instanceof DOMException && (e.name === 'QuotaExceededError' || e.code === 22)) {
-      alert('האחסון מלא! לא ניתן לשמור. ייצא גיבוי ומחק היסטוריה ישנה כדי לפנות מקום.');
-    } else {
-      alert('שגיאה בשמירת נתונים. מומלץ לייצא גיבוי.');
-    }
+    alert('שגיאה בשמירת נתונים. מומלץ לייצא גיבוי.');
   }
 }
 
@@ -99,24 +146,32 @@ export function debouncedSaveData(data: AppState): void {
   saveTimer = setTimeout(() => saveData(data), 300);
 }
 
-export function getStorageUsage(): { usedBytes: number; usedKB: number; estimatedLimit: number; percentUsed: number } {
+export async function getStorageUsage(): Promise<{
+  usedBytes: number;
+  usedKB: number;
+  estimatedLimit: number;
+  percentUsed: number;
+}> {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    const usedBytes = raw ? new Blob([raw]).size : 0;
-    const estimatedLimit = 5 * 1024 * 1024;
-    return {
-      usedBytes,
-      usedKB: Math.round(usedBytes / 1024),
-      estimatedLimit,
-      percentUsed: Math.round((usedBytes / estimatedLimit) * 100),
-    };
+    if (navigator.storage?.estimate) {
+      const est = await navigator.storage.estimate();
+      const used = est.usage || 0;
+      const quota = est.quota || 100 * 1024 * 1024;
+      return {
+        usedBytes: used,
+        usedKB: Math.round(used / 1024),
+        estimatedLimit: quota,
+        percentUsed: Math.round((used / quota) * 100),
+      };
+    }
+    return { usedBytes: 0, usedKB: 0, estimatedLimit: 100 * 1024 * 1024, percentUsed: 0 };
   } catch {
-    return { usedBytes: 0, usedKB: 0, estimatedLimit: 5 * 1024 * 1024, percentUsed: 0 };
+    return { usedBytes: 0, usedKB: 0, estimatedLimit: 100 * 1024 * 1024, percentUsed: 0 };
   }
 }
 
-export function exportData(): void {
-  const data = loadData();
+export async function exportData(): Promise<void> {
+  const data = await loadData();
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');

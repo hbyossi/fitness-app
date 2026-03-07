@@ -1,11 +1,11 @@
-import React, { useEffect, useRef, useCallback } from 'react';
+import React, { useEffect, useRef, useCallback, useState } from 'react';
 import { loadData, debouncedSaveData } from '../utils/storage';
 import { PlansProvider, usePlans } from './PlansContext';
 import { HistoryProvider, useHistory } from './HistoryContext';
 import { BankProvider, useBank } from './BankContext';
 import type { AppState } from '../types';
 
-const initialState: AppState = loadData();
+const emptyState: AppState = { plans: [], history: [], exerciseBank: [] };
 
 // Inner component that watches all three slices and persists to storage
 function Persister({ children }: { children: React.ReactNode }) {
@@ -27,10 +27,27 @@ function Persister({ children }: { children: React.ReactNode }) {
 }
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
+  const [state, setState] = useState<AppState | null>(null);
+
+  useEffect(() => {
+    loadData().then(setState);
+  }, []);
+
+  if (!state) {
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh' }}>
+        <div style={{ textAlign: 'center', color: 'var(--text-muted)' }}>
+          <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>🏋️</div>
+          <div>טוען נתונים...</div>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <PlansProvider initialPlans={initialState.plans}>
-      <HistoryProvider initialHistory={initialState.history}>
-        <BankProvider initialBank={initialState.exerciseBank}>
+    <PlansProvider initialPlans={state.plans}>
+      <HistoryProvider initialHistory={state.history}>
+        <BankProvider initialBank={state.exerciseBank}>
           <Persister>{children}</Persister>
         </BankProvider>
       </HistoryProvider>
