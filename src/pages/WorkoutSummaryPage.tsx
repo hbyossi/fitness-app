@@ -9,6 +9,7 @@ interface WorkoutSummary {
   planName: string;
   exercises: HistoryExercise[];
   duration: number;
+  notes?: string;
 }
 
 export default function WorkoutSummaryPage() {
@@ -25,6 +26,7 @@ export default function WorkoutSummaryPage() {
       planName: last.planName,
       exercises: last.exercises,
       duration: last.duration,
+      notes: last.notes,
     };
   })();
 
@@ -100,6 +102,12 @@ export default function WorkoutSummaryPage() {
           </div>
         );
       })}
+
+      {summary.notes && (
+        <div className="card" style={{ fontStyle: 'italic', color: 'var(--text-muted)', fontSize: '0.9rem' }}>
+          📝 {summary.notes}
+        </div>
+      )}
 
       <div style={{ display: 'flex', gap: '0.6rem', marginTop: '1rem' }}>
         <button className="btn btn-primary btn-full" onClick={() => navigate('/')}>

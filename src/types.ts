@@ -49,6 +49,7 @@ export interface HistoryEntry {
   date: string;
   exercises: HistoryExercise[];
   duration: number;
+  notes?: string;
 }
 
 export interface BankExercise {
@@ -84,9 +85,11 @@ export type HistoryAction =
         workoutName: string;
         exercises: HistoryExercise[];
         duration: number;
+        notes?: string;
       };
     }
   | { type: 'DELETE_HISTORY'; payload: string }
+  | { type: 'CLEAR_ALL_HISTORY' }
   | { type: 'IMPORT_HISTORY'; payload: HistoryEntry[] };
 
 export type BankAction =

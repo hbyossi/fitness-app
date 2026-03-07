@@ -35,6 +35,9 @@ function MiniLineChart({ points, color, label }: { points: DataPoint[]; color: s
   const diff = last - first;
   const diffPct = first > 0 ? Math.round((diff / first) * 100) : 0;
 
+  // Find the PR (all-time max) index
+  const prIdx = values.indexOf(Math.max(...values));
+
   return (
     <div className="card">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.3rem' }}>
@@ -71,7 +74,12 @@ function MiniLineChart({ points, color, label }: { points: DataPoint[]; color: s
         <path d={pathD} fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
         {/* Dots */}
         {coords.map((c, i) => (
-          <circle key={i} cx={c.x} cy={c.y} r="3" fill={color} />
+          <g key={i}>
+            <circle cx={c.x} cy={c.y} r={i === prIdx ? 5 : 3} fill={i === prIdx ? 'var(--warning)' : color} />
+            {i === prIdx && (
+              <text x={c.x} y={c.y - 8} textAnchor="middle" fontSize="9" fill="var(--warning)">🏆</text>
+            )}
+          </g>
         ))}
         {/* Date labels — first and last */}
         <text x={coords[0].x} y={H - 4} textAnchor="start" fontSize="7" fill="var(--text-muted)">

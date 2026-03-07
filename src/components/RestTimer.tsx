@@ -25,6 +25,10 @@ export default function RestTimer({
     if (intervalRef.current) clearInterval(intervalRef.current);
   }, []);
 
+  const notifyDone = useCallback(() => {
+    try { navigator.vibrate?.([200, 100, 200]); } catch { /* unsupported */ }
+  }, []);
+
   // Auto-start when a set is completed
   const prevSignal = useRef(autoStartSignal);
   useEffect(() => {
@@ -41,6 +45,7 @@ export default function RestTimer({
         setSeconds((prev) => {
           if (prev <= 1) {
             stop();
+            notifyDone();
             return 0;
           }
           return prev - 1;
@@ -50,7 +55,7 @@ export default function RestTimer({
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
-  }, [running, stop]);
+  }, [running, stop, notifyDone]);
 
   const start = () => {
     if (seconds === 0) setSeconds(defaultSeconds);

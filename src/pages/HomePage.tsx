@@ -60,6 +60,7 @@ export default function HomePage() {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [addingExercise, setAddingExercise] = useState<{ planId: string; workoutId: string } | null>(null);
   const [expandedPlan, setExpandedPlan] = useState<string | null>(null);
+  const [planFilter, setPlanFilter] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -124,7 +125,18 @@ export default function HomePage() {
           </Link>
         </div>
       ) : (
-        plans.map((plan) => (
+        <>
+        {plans.length >= 3 && (
+          <div className="form-group" style={{ marginBottom: '0.8rem' }}>
+            <input
+              className="form-input"
+              value={planFilter}
+              onChange={(e) => setPlanFilter(e.target.value)}
+              placeholder="🔍 חפש תוכנית..."
+            />
+          </div>
+        )}
+        {plans.filter((p) => !planFilter || p.name.includes(planFilter)).map((plan) => (
           <div key={plan.id} className="card">
             <div className="card-header">
               <div>
@@ -218,7 +230,8 @@ export default function HomePage() {
               </div>
             )}
           </div>
-        ))
+        ))}
+        </>
       )}
 
       {/* Data Management */}

@@ -20,11 +20,14 @@ export function historyReducer(state: HistoryEntry[], action: HistoryAction): Hi
         date: new Date().toISOString(),
         exercises: action.payload.exercises,
         duration: action.payload.duration,
+        ...(action.payload.notes ? { notes: action.payload.notes } : {}),
       };
       return [entry, ...state];
     }
     case 'DELETE_HISTORY':
       return state.filter((h) => h.id !== action.payload);
+    case 'CLEAR_ALL_HISTORY':
+      return [];
     case 'IMPORT_HISTORY':
       return action.payload;
     default:

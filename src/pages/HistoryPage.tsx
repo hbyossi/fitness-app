@@ -7,12 +7,25 @@ import type { HistoryEntry } from '../types';
 export default function HistoryPage() {
   const { history, dispatchHistory } = useHistory();
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [clearAll, setClearAll] = useState(false);
+  const [dateFilter, setDateFilter] = useState<'all' | '7' | '30' | '90'>('all');
 
   const handleDelete = () => {
     if (!deleteId) return;
     dispatchHistory({ type: 'DELETE_HISTORY', payload: deleteId });
     setDeleteId(null);
   };
+
+  const handleClearAll = () => {
+    dispatchHistory({ type: 'CLEAR_ALL_HISTORY' });
+    setClearAll(false);
+  };
+
+  // Date filter
+  const filteredHistory = dateFilter === 'all' ? history : history.filter((e) => {
+    const daysAgo = (Date.now() - new Date(e.date).getTime()) / (1000 * 60 * 60 * 24);
+    return daysAgo <= parseInt(dateFilter);
+  });
 
   // Weekly stats
   const now = new Date();
@@ -30,7 +43,7 @@ export default function HistoryPage() {
 
   // Group by date
   const grouped: Record<string, HistoryEntry[]> = {};
-  history.forEach((entry) => {
+  filteredHistory.forEach((entry) => {
     const dateKey = new Date(entry.date).toLocaleDateString('he-IL');
     if (!grouped[dateKey]) grouped[dateKey] = [];
     grouped[dateKey].push(entry);
@@ -40,8 +53,37 @@ export default function HistoryPage() {
     <div>
       <div className="page-header">
         <h1 className="page-title">היסטוריית אימונים</h1>
-        <span className="badge badge-primary">{history.length} אימונים</span>
+        <div style={{ display: 'flex', gap: '0.3rem', alignItems: 'center' }}>
+          <span className="badge badge-primary">{history.length} אימונים</span>
+          {history.length > 0 && (
+            <button className="btn btn-ghost" onClick={() => setClearAll(true)} title="מחק הכל" style={{ fontSize: '0.75rem' }}>
+              🗑️
+            </button>
+          )}
+        </div>
       </div>
+
+      {/* Date filter */}
+      {history.length > 0 && (
+        <div style={{ display: 'flex', gap: '0.3rem', marginBottom: '0.8rem', overflowX: 'auto' }}>
+          {([['all', 'הכל'], ['7', '7 ימים'], ['30', '30 ימים'], ['90', '90 ימים']] as const).map(([val, label]) => (
+            <button
+              key={val}
+              className="btn"
+              onClick={() => setDateFilter(val)}
+              style={{
+                background: dateFilter === val ? 'var(--primary)' : 'var(--bg-input)',
+                fontSize: '0.75rem',
+                padding: '0.3rem 0.6rem',
+                whiteSpace: 'nowrap',
+                flexShrink: 0,
+              }}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      )}
 
       {history.length > 0 && (
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.6rem', marginBottom: '1rem' }}>
@@ -62,6 +104,10 @@ export default function HistoryPage() {
         <div className="empty-state">
           <div className="empty-icon">📊</div>
           <div className="empty-text">עדיין לא ביצעת אימונים</div>
+        </div>
+      ) : filteredHistory.length === 0 ? (
+        <div className="empty-state">
+          <div className="empty-text">אין אימונים בתקופה שנבחרה</div>
         </div>
       ) : (
         Object.entries(grouped).map(([dateKey, entries]) => (
@@ -107,6 +153,11 @@ export default function HistoryPage() {
                       </span>
                     </div>
                   ))}
+                  {entry.notes && (
+                    <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.4rem', fontStyle: 'italic' }}>
+                      📝 {entry.notes}
+                    </div>
+                  )}
                 </div>
               );
             })}
@@ -120,6 +171,15 @@ export default function HistoryPage() {
           text="האם למחוק את רשומת האימון?"
           onConfirm={handleDelete}
           onCancel={() => setDeleteId(null)}
+        />
+      )}
+
+      {clearAll && (
+        <ConfirmDialog
+          title="מחיקת כל ההיסטוריה"
+          text={`האם למחוק את כל ${history.length} האימונים? לא ניתן לשחזר.`}
+          onConfirm={handleClearAll}
+          onCancel={() => setClearAll(false)}
         />
       )}
     </div>

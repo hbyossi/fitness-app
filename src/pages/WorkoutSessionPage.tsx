@@ -26,6 +26,7 @@ interface SavedSession {
   session: SessionExercise[];
   currentExIndex: number;
   startTime: number;
+  notes: string;
 }
 
 const SESSION_KEY = 'fitness_workout_session';
@@ -83,6 +84,22 @@ export default function WorkoutSessionPage() {
     return null;
   };
 
+  // Get all-time max weight for an exercise (for PR detection)
+  const getMaxWeight = (exerciseId: string, exerciseName: string): number => {
+    let max = 0;
+    for (const entry of history) {
+      const found =
+        entry.exercises.find((e) => e.exerciseId === exerciseId) ||
+        entry.exercises.find((e) => e.name === exerciseName);
+      if (found) {
+        for (const s of found.sets) {
+          if (s.done && s.weight > max) max = s.weight;
+        }
+      }
+    }
+    return max;
+  };
+
   // Build session state: each exercise has sets with weight/reps/done
   const [session, setSession] = useState<SessionExercise[]>(() => {
     if (isResume) return saved.current!.session;
@@ -106,12 +123,13 @@ export default function WorkoutSessionPage() {
 
   const [currentExIndex, setCurrentExIndex] = useState(isResume ? saved.current!.currentExIndex : 0);
   const [restTimerSignal, setRestTimerSignal] = useState(0);
+  const [notes, setNotes] = useState(isResume ? saved.current!.notes || '' : '');
 
   // Persist session to sessionStorage on every change
   useEffect(() => {
     if (finished) return;
-    saveSession({ planId: planId!, workoutId: workoutId!, session, currentExIndex, startTime: startTimeRef.current });
-  }, [session, currentExIndex, finished, planId, workoutId]);
+    saveSession({ planId: planId!, workoutId: workoutId!, session, currentExIndex, startTime: startTimeRef.current, notes });
+  }, [session, currentExIndex, finished, planId, workoutId, notes]);
 
   // Prevent accidental page close/refresh during workout
   useEffect(() => {
@@ -157,6 +175,20 @@ export default function WorkoutSessionPage() {
     });
   };
 
+  const addSet = (exIdx: number) => {
+    setSession((prev) => {
+      const copy = prev.map((ex) => ({ ...ex, sets: ex.sets.map((s) => ({ ...s })) }));
+      const lastSet = copy[exIdx].sets[copy[exIdx].sets.length - 1];
+      copy[exIdx].sets.push({
+        setNum: copy[exIdx].sets.length + 1,
+        weight: lastSet?.weight ?? 0,
+        reps: lastSet?.reps ?? 12,
+        done: false,
+      });
+      return copy;
+    });
+  };
+
   const completedSets = session.reduce((acc, ex) => acc + ex.sets.filter((s) => s.done).length, 0);
   const totalSets = session.reduce((acc, ex) => acc + ex.sets.length, 0);
   const progress = totalSets > 0 ? Math.round((completedSets / totalSets) * 100) : 0;
@@ -179,6 +211,7 @@ export default function WorkoutSessionPage() {
           })),
         })),
         duration,
+        ...(notes.trim() ? { notes: notes.trim() } : {}),
       },
     });
     setFinished(true);
@@ -194,6 +227,7 @@ export default function WorkoutSessionPage() {
             sets: ex.sets.map((s) => ({ weight: s.weight, reps: s.reps, done: s.done })),
           })),
           duration,
+          ...(notes.trim() ? { notes: notes.trim() } : {}),
         },
       },
     });
@@ -209,6 +243,10 @@ export default function WorkoutSessionPage() {
   };
 
   const currentEx = session[currentExIndex];
+
+  // PR detection: check if any done set exceeds the all-time max for current exercise
+  const currentPrMax = currentEx ? getMaxWeight(currentEx.exerciseId, currentEx.name) : 0;
+  const currentExHasPR = currentEx?.sets.some((s) => s.done && s.weight > currentPrMax && currentPrMax > 0) ?? false;
 
   return (
     <div>
@@ -274,6 +312,9 @@ export default function WorkoutSessionPage() {
         <div className="card">
           <div className="card-title" style={{ marginBottom: '0.3rem' }}>
             {currentEx.name}
+            {currentExHasPR && (
+              <span style={{ marginRight: '0.5rem', fontSize: '0.8rem', color: 'var(--warning)' }}>🏆 שיא חדש!</span>
+            )}
           </div>
           {hasInstructions(currentEx.instructions) && (
             <div style={{ marginBottom: '0.6rem' }}>
@@ -291,7 +332,9 @@ export default function WorkoutSessionPage() {
             <span>✓</span>
           </div>
 
-          {currentEx.sets.map((set, sIdx) => (
+          {currentEx.sets.map((set, sIdx) => {
+            const isPR = set.done && set.weight > currentPrMax && currentPrMax > 0;
+            return (
             <div key={sIdx} className="set-row">
               <span className="set-number">{set.setNum}</span>
               <input
@@ -313,10 +356,20 @@ export default function WorkoutSessionPage() {
                 className={`set-check ${set.done ? 'done' : ''}`}
                 onClick={() => toggleSetDone(currentExIndex, sIdx)}
               >
-                ✓
+                {isPR ? '🏆' : '✓'}
               </button>
             </div>
-          ))}
+            );
+          })}
+
+          <button
+            type="button"
+            className="btn btn-ghost"
+            onClick={() => addSet(currentExIndex)}
+            style={{ fontSize: '0.8rem', marginTop: '0.4rem', width: '100%', border: '1px dashed var(--border)' }}
+          >
+            ➕ סט נוסף
+          </button>
 
           {/* Navigate exercises */}
           <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '0.8rem' }}>
@@ -339,6 +392,19 @@ export default function WorkoutSessionPage() {
       )}
 
       <RestTimer defaultSeconds={currentEx?.restTime || 90} autoStartSignal={restTimerSignal} />
+
+      {/* Workout notes */}
+      <div className="card" style={{ marginTop: '0.8rem' }}>
+        <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '0.3rem' }}>📝 הערות לאימון</div>
+        <textarea
+          className="form-input"
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+          placeholder="הערות, תחושות, שינויים..."
+          rows={2}
+          style={{ resize: 'vertical' }}
+        />
+      </div>
 
       <button className="btn btn-success btn-full" onClick={finishWorkout} style={{ marginTop: '1rem' }}>
         🏁 סיים אימון ({completedSets}/{totalSets} סטים)
