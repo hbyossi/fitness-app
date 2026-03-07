@@ -8,6 +8,7 @@ import {
   normalizeInstructions,
   hasInstructions,
 } from '../components/ExerciseInstructions';
+import { suggestInstructions } from '../utils/exerciseInstructionsDb';
 import type { Instructions, BankExercise } from '../types';
 
 export default function ExerciseBankPage() {
@@ -124,6 +125,19 @@ export default function ExerciseBankPage() {
             placeholder="שם התרגיל"
             required
           />
+          {name.trim() && !hasInstructions(instructions) && suggestInstructions(name) && (
+            <button
+              type="button"
+              className="btn btn-ghost"
+              style={{ fontSize: '0.8rem', marginTop: '0.3rem', color: 'var(--warning)' }}
+              onClick={() => {
+                const suggested = suggestInstructions(name);
+                if (suggested) setInstructions(suggested);
+              }}
+            >
+              💡 הצע הוראות ביצוע
+            </button>
+          )}
         </div>
         <div className="form-group">
           <label className="form-label">קבוצת שרירים</label>

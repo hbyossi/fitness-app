@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { generateId, formatReps, parseReps } from '../utils/helpers';
-import { InstructionsFields, normalizeInstructions } from './ExerciseInstructions';
+import { InstructionsFields, normalizeInstructions, hasInstructions } from './ExerciseInstructions';
+import { suggestInstructions } from '../utils/exerciseInstructionsDb';
 import type { Exercise, Instructions, BankExercise } from '../types';
 
 interface ExerciseFormProps {
@@ -94,6 +95,19 @@ export default function ExerciseForm({ onAdd, exerciseBank, compact, onCancel }:
           onChange={(e) => setExName(e.target.value)}
           placeholder="שם התרגיל"
         />
+        {exName.trim() && !hasInstructions(exInstructions) && suggestInstructions(exName) && (
+          <button
+            type="button"
+            className="btn btn-ghost"
+            style={{ fontSize: '0.8rem', marginTop: '0.3rem', color: 'var(--warning)' }}
+            onClick={() => {
+              const suggested = suggestInstructions(exName);
+              if (suggested) setExInstructions(suggested);
+            }}
+          >
+            💡 הצע הוראות ביצוע
+          </button>
+        )}
       </div>
       <div className="form-row-3">
         <div className="form-group">
