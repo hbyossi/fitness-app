@@ -350,20 +350,37 @@ const DB: ExerciseEntry[] = [
   },
 ];
 
+function scoreMatch(name: string, keyword: string): number {
+  const kw = keyword.toLowerCase();
+  if (name.includes(kw) || kw.includes(name)) return 0.9;
+  const nameWords = name.split(/\s+/).filter(Boolean);
+  const kwWords = kw.split(/\s+/).filter(Boolean);
+  if (!nameWords.length || !kwWords.length) return 0;
+  const kwSet = new Set(kwWords);
+  const matches = nameWords.filter((w) => kwSet.has(w)).length;
+  return matches / Math.max(nameWords.length, kwWords.length);
+}
+
 /**
  * Find matching instructions for an exercise name.
- * Uses keyword-based fuzzy matching — returns the first match.
+ * Uses scored fuzzy matching — returns the best match above threshold.
  */
 export function suggestInstructions(exerciseName: string): Instructions | null {
   const name = exerciseName.trim().toLowerCase();
   if (!name) return null;
 
+  let bestScore = 0;
+  let bestInstructions: Instructions | null = null;
+
   for (const entry of DB) {
     for (const keyword of entry.keywords) {
-      if (name.includes(keyword.toLowerCase()) || keyword.toLowerCase().includes(name)) {
-        return { ...entry.instructions };
+      const score = scoreMatch(name, keyword);
+      if (score > bestScore) {
+        bestScore = score;
+        bestInstructions = entry.instructions;
       }
     }
   }
-  return null;
+
+  return bestScore >= 0.3 ? (bestInstructions ? { ...bestInstructions } : null) : null;
 }

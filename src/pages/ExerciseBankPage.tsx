@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useBank } from '../context/AppProvider';
+import { useAuth } from '../context/AuthContext';
 import { MUSCLE_GROUPS, formatReps, parseReps } from '../utils/helpers';
 import UndoToast from '../components/UndoToast';
 import {
@@ -9,10 +10,12 @@ import {
   hasInstructions,
 } from '../components/ExerciseInstructions';
 import { suggestInstructions } from '../utils/exerciseInstructionsDb';
+import { fetchClaudeInstructions, hasApiKey } from '../utils/claudeInstructions';
 import type { Instructions, BankExercise } from '../types';
 
 export default function ExerciseBankPage() {
   const { exerciseBank, dispatchBank } = useBank();
+  const { user } = useAuth();
   const bank = exerciseBank;
 
   const [name, setName] = useState('');
@@ -42,6 +45,32 @@ export default function ExerciseBankPage() {
 
   const [deletedExercise, setDeletedExercise] = useState<BankExercise | null>(null);
   const [filter, setFilter] = useState('');
+  const [aiLoading, setAiLoading] = useState(false);
+  const [editAiLoading, setEditAiLoading] = useState(false);
+
+  const handleAI = async () => {
+    if (!name.trim() || !user) return;
+    setAiLoading(true);
+    try {
+      const result = await fetchClaudeInstructions(name.trim(), user.uid);
+      if (result) setInstructions(result);
+      else alert('לא הצלחתי לייצר הוראות. ודא שה-API Key מוגדר ב-.env.local');
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
+  const handleEditAI = async () => {
+    if (!editName.trim() || !user) return;
+    setEditAiLoading(true);
+    try {
+      const result = await fetchClaudeInstructions(editName.trim(), user.uid);
+      if (result) setEditInstructions(result);
+      else alert('לא הצלחתי לייצר הוראות. ודא שה-API Key מוגדר ב-.env.local');
+    } finally {
+      setEditAiLoading(false);
+    }
+  };
 
   const handleAdd = (e: React.FormEvent) => {
     e.preventDefault();
@@ -131,18 +160,30 @@ export default function ExerciseBankPage() {
             placeholder="שם התרגיל"
             required
           />
-          {name.trim() && !hasInstructions(instructions) && suggestInstructions(name) && (
-            <button
-              type="button"
-              className="btn btn-ghost"
-              style={{ fontSize: '0.8rem', marginTop: '0.3rem', color: 'var(--warning)' }}
-              onClick={() => {
-                const suggested = suggestInstructions(name);
-                if (suggested) setInstructions(suggested);
-              }}
-            >
-              💡 הצע הוראות ביצוע
-            </button>
+          {name.trim() && (
+            <div style={{ display: 'flex', gap: '0.4rem', marginTop: '0.3rem', flexWrap: 'wrap' }}>
+              {!hasInstructions(instructions) && suggestInstructions(name) && (
+                <button
+                  type="button"
+                  className="btn btn-ghost"
+                  style={{ fontSize: '0.78rem', color: 'var(--warning)' }}
+                  onClick={() => { const s = suggestInstructions(name); if (s) setInstructions(s); }}
+                >
+                  💡 הצע מקומי
+                </button>
+              )}
+              {hasApiKey() && (
+                <button
+                  type="button"
+                  className="btn btn-ghost"
+                  style={{ fontSize: '0.78rem', color: 'var(--primary)', opacity: aiLoading ? 0.6 : 1 }}
+                  disabled={aiLoading}
+                  onClick={handleAI}
+                >
+                  {aiLoading ? '⏳ מייצר...' : hasInstructions(instructions) ? '✨ שפר עם Claude' : '🤖 צור עם Claude'}
+                </button>
+              )}
+            </div>
           )}
         </div>
         <div className="form-group">
@@ -287,6 +328,19 @@ export default function ExerciseBankPage() {
                   />
                 </div>
               </div>
+              {hasApiKey() && editName.trim() && (
+                <div style={{ marginBottom: '0.4rem' }}>
+                  <button
+                    type="button"
+                    className="btn btn-ghost"
+                    style={{ fontSize: '0.78rem', color: 'var(--primary)', opacity: editAiLoading ? 0.6 : 1 }}
+                    disabled={editAiLoading}
+                    onClick={handleEditAI}
+                  >
+                    {editAiLoading ? '⏳ מייצר...' : hasInstructions(editInstructions) ? '✨ שפר עם Claude' : '🤖 צור עם Claude'}
+                  </button>
+                </div>
+              )}
               <InstructionsFields value={editInstructions} onChange={setEditInstructions} />
               <div style={{ display: 'flex', gap: '0.4rem', marginTop: '0.5rem' }}>
                 <button className="btn btn-success" style={{ flex: 1 }} onClick={saveEdit}>

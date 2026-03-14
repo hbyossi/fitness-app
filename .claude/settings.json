@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm test)",
+      "Bash(npm run build)",
+      "Skill(claude-api)",
+      "Skill(claude-api:*)"
+    ]
+  }
+}

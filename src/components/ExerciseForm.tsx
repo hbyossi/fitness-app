@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { generateId, formatReps, parseReps } from '../utils/helpers';
 import { InstructionsFields, normalizeInstructions, hasInstructions } from './ExerciseInstructions';
 import { suggestInstructions } from '../utils/exerciseInstructionsDb';
+import { fetchClaudeInstructions, hasApiKey } from '../utils/claudeInstructions';
+import { useAuth } from '../context/AuthContext';
 import type { Exercise, Instructions, BankExercise } from '../types';
 
 interface ExerciseFormProps {
@@ -13,6 +15,7 @@ interface ExerciseFormProps {
 }
 
 export default function ExerciseForm({ onAdd, exerciseBank, compact, onCancel }: ExerciseFormProps) {
+  const { user } = useAuth();
   const [exName, setExName] = useState('');
   const [exSets, setExSets] = useState('3');
   const [exReps, setExReps] = useState('12');
@@ -26,6 +29,19 @@ export default function ExerciseForm({ onAdd, exerciseBank, compact, onCancel }:
     notes: '',
   });
   const [bankSearch, setBankSearch] = useState('');
+  const [aiLoading, setAiLoading] = useState(false);
+
+  const handleAI = async () => {
+    if (!exName.trim() || !user) return;
+    setAiLoading(true);
+    try {
+      const result = await fetchClaudeInstructions(exName.trim(), user.uid);
+      if (result) setExInstructions(result);
+      else alert('לא הצלחתי לייצר הוראות. ודא שה-API Key מוגדר ב-.env.local');
+    } finally {
+      setAiLoading(false);
+    }
+  };
 
   const pickFromBank = (id: string) => {
     if (!id) return;
@@ -99,18 +115,30 @@ export default function ExerciseForm({ onAdd, exerciseBank, compact, onCancel }:
           onChange={(e) => setExName(e.target.value)}
           placeholder="שם התרגיל"
         />
-        {exName.trim() && !hasInstructions(exInstructions) && suggestInstructions(exName) && (
-          <button
-            type="button"
-            className="btn btn-ghost"
-            style={{ fontSize: '0.8rem', marginTop: '0.3rem', color: 'var(--warning)' }}
-            onClick={() => {
-              const suggested = suggestInstructions(exName);
-              if (suggested) setExInstructions(suggested);
-            }}
-          >
-            💡 הצע הוראות ביצוע
-          </button>
+        {exName.trim() && (
+          <div style={{ display: 'flex', gap: '0.4rem', marginTop: '0.3rem', flexWrap: 'wrap' }}>
+            {!hasInstructions(exInstructions) && suggestInstructions(exName) && (
+              <button
+                type="button"
+                className="btn btn-ghost"
+                style={{ fontSize: '0.78rem', color: 'var(--warning)' }}
+                onClick={() => { const s = suggestInstructions(exName); if (s) setExInstructions(s); }}
+              >
+                💡 הצע מקומי
+              </button>
+            )}
+            {hasApiKey() && (
+              <button
+                type="button"
+                className="btn btn-ghost"
+                style={{ fontSize: '0.78rem', color: 'var(--primary)', opacity: aiLoading ? 0.6 : 1 }}
+                disabled={aiLoading}
+                onClick={handleAI}
+              >
+                {aiLoading ? '⏳ מייצר...' : hasInstructions(exInstructions) ? '✨ שפר עם Claude' : '🤖 צור עם Claude'}
+              </button>
+            )}
+          </div>
         )}
       </div>
 
