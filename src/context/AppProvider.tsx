@@ -1,5 +1,4 @@
-import React, { useEffect, useRef, useCallback, useState } from 'react';
-import { loadData, debouncedSaveData, setPendingData, flushPendingSave, saveData } from '../utils/storage';
+import React, { useEffect, useCallback, useState } from 'react';
 import { debouncedSaveCloud, loadCloudData, listenCloudData, saveCloudData } from '../utils/firebaseSync';
 import { useAuth } from './AuthContext';
 import { PlansProvider, usePlans } from './PlansContext';
@@ -7,49 +6,30 @@ import { HistoryProvider, useHistory } from './HistoryContext';
 import { BankProvider, useBank } from './BankContext';
 import type { AppState } from '../types';
 
-// Inner component that watches all three slices and persists to storage + cloud
+const emptyState: AppState = { plans: [], history: [], exerciseBank: [] };
+
+// Inner component that watches all three slices and persists to cloud
 function Persister({ children }: { children: React.ReactNode }) {
   const { plans } = usePlans();
   const { history } = useHistory();
   const { exerciseBank } = useBank();
   const { user } = useAuth();
-  const isFirst = useRef(true);
-  const skipNextPersist = useRef(false);
+  const isFirst = React.useRef(true);
 
   useEffect(() => {
-    // Skip the initial render (data just loaded from storage)
     if (isFirst.current) {
       isFirst.current = false;
       return;
     }
-    // Skip if this change was triggered by a remote cloud snapshot
-    if (skipNextPersist.current) {
-      skipNextPersist.current = false;
-      return;
-    }
-    const data = { plans, history, exerciseBank };
-    setPendingData(data);
-    debouncedSaveData(data);
     if (user) {
-      debouncedSaveCloud(user.uid, data);
+      debouncedSaveCloud(user.uid, { plans, history, exerciseBank });
     }
   }, [plans, history, exerciseBank, user]);
-
-  // Flush pending save when tab is hidden or closing
-  useEffect(() => {
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'hidden') {
-        flushPendingSave();
-      }
-    };
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-  }, []);
 
   return <>{children}</>;
 }
 
-// Listens for remote Firestore changes and imports them
+// Listens for remote Firestore changes and imports them into React state
 function CloudListener() {
   const { user } = useAuth();
   const importData = useImportData();
@@ -58,14 +38,11 @@ function CloudListener() {
     if (!user) return;
     let skipFirst = true;
     const unsub = listenCloudData(user.uid, (data) => {
-      // Skip the initial snapshot (we already loaded this data)
       if (skipFirst) {
         skipFirst = false;
         return;
       }
       importData(data);
-      // Also persist to local IndexedDB
-      saveData(data);
     });
     return unsub;
   }, [user, importData]);
@@ -75,51 +52,63 @@ function CloudListener() {
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<AppState | null>(null);
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, signIn } = useAuth();
 
   useEffect(() => {
+    if (authLoading || !user) return;
     let cancelled = false;
 
     async function init() {
-      const localData = await loadData();
-
-      if (user) {
-        try {
-          const cloudData = await loadCloudData(user.uid);
-          if (cancelled) return;
-          if (cloudData && Array.isArray(cloudData.plans)) {
-            // Cloud has data — use it
-            setState(cloudData);
-            // Also update local copy
-            saveData(cloudData);
-            return;
-          }
-        } catch (e) {
-          console.error('Failed to load cloud data:', e);
+      try {
+        const cloudData = await loadCloudData(user!.uid);
+        if (cancelled) return;
+        if (cloudData && Array.isArray(cloudData.plans)) {
+          setState(cloudData);
+          return;
         }
-        // No cloud data — push local data to cloud on first login
-        if (
-          localData.plans.length > 0 ||
-          localData.history.length > 0 ||
-          localData.exerciseBank.length > 0
-        ) {
-          saveCloudData(user.uid, localData).catch(console.error);
-        }
+      } catch (e) {
+        console.error('Failed to load cloud data:', e);
       }
-
-      if (!cancelled) setState(localData);
+      if (!cancelled) {
+        setState(emptyState);
+        // Push empty state to initialize cloud doc
+        saveCloudData(user!.uid, emptyState).catch(console.error);
+      }
     }
 
-    if (!authLoading) {
-      init();
-    }
-
-    return () => {
-      cancelled = true;
-    };
+    init();
+    return () => { cancelled = true; };
   }, [user, authLoading]);
 
-  if (authLoading || !state) {
+  if (authLoading) {
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh' }}>
+        <div style={{ textAlign: 'center', color: 'var(--text-muted)' }}>
+          <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>🏋️</div>
+          <div>טוען...</div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '80vh' }}>
+        <div style={{ textAlign: 'center', maxWidth: 320 }}>
+          <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🏋️</div>
+          <h2 style={{ marginBottom: '0.5rem' }}>Fitness Tracker</h2>
+          <p style={{ color: 'var(--text-muted)', marginBottom: '1.5rem', fontSize: '0.95rem' }}>
+            התחבר כדי לסנכרן את האימונים שלך בין מכשירים
+          </p>
+          <button className="btn btn-primary" style={{ width: '100%', padding: '0.75rem' }} onClick={signIn}>
+            🔑 התחבר עם Google
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!state) {
     return (
       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh' }}>
         <div style={{ textAlign: 'center', color: 'var(--text-muted)' }}>

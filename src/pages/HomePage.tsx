@@ -1,56 +1,10 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { usePlans, useBank, useHistory, useImportData, useMergeData } from '../context/AppProvider';
 import UndoToast from '../components/UndoToast';
 import ExerciseForm from '../components/ExerciseForm';
-import { exportData, validateImportData, getStorageUsage } from '../utils/storage';
+import { exportAppState, validateImportData } from '../utils/storage';
 import type { Exercise, Plan } from '../types';
-
-function StorageUsageBar() {
-  const [usage, setUsage] = useState({ usedKB: 0, percentUsed: 0, estimatedLimitMB: 0 });
-  useEffect(() => {
-    getStorageUsage().then((u) =>
-      setUsage({ usedKB: u.usedKB, percentUsed: u.percentUsed, estimatedLimitMB: Math.round(u.estimatedLimit / 1024 / 1024) }),
-    );
-  }, []);
-  const { usedKB, percentUsed, estimatedLimitMB } = usage;
-  const isWarning = percentUsed > 70;
-  const isDanger = percentUsed > 90;
-  const color = isDanger ? 'var(--danger)' : isWarning ? 'var(--warning)' : 'var(--primary)';
-
-  return (
-    <div style={{ marginBottom: '0.8rem' }}>
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          fontSize: '0.75rem',
-          color: 'var(--text-muted)',
-          marginBottom: '0.3rem',
-        }}
-      >
-        <span>💿 אחסון: {usedKB} KB</span>
-        <span>{percentUsed}% מ-{estimatedLimitMB || '?'} MB</span>
-      </div>
-      <div style={{ height: 6, background: 'var(--bg-input)', borderRadius: 3, overflow: 'hidden' }}>
-        <div
-          style={{
-            height: '100%',
-            width: `${Math.min(percentUsed, 100)}%`,
-            background: color,
-            borderRadius: 3,
-            transition: 'width 0.3s',
-          }}
-        />
-      </div>
-      {isDanger && (
-        <div style={{ fontSize: '0.75rem', color: 'var(--danger)', marginTop: '0.3rem' }}>
-          ⚠️ האחסון כמעט מלא! מומלץ לייצא גיבוי ולמחוק היסטוריה ישנה.
-        </div>
-      )}
-    </div>
-  );
-}
 
 export default function HomePage() {
   const { plans, dispatchPlans } = usePlans();
@@ -299,9 +253,8 @@ export default function HomePage() {
         <div className="card-subtitle" style={{ marginBottom: '0.8rem' }}>
           ייצא את כל הנתונים לקובץ גיבוי, או ייבא גיבוי קיים
         </div>
-        <StorageUsageBar />
         <div style={{ display: 'flex', gap: '0.5rem' }}>
-          <button className="btn btn-primary" style={{ flex: 1 }} onClick={() => exportData()}>
+          <button className="btn btn-primary" style={{ flex: 1 }} onClick={() => exportAppState({ plans, history, exerciseBank })}>
             📤 ייצוא גיבוי
           </button>
           <button

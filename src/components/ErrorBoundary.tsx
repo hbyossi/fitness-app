@@ -1,5 +1,4 @@
 import React from 'react';
-import { exportData } from '../utils/storage';
 
 interface ErrorBoundaryState {
   hasError: boolean;
@@ -21,11 +20,6 @@ export default class ErrorBoundary extends React.Component<{ children: React.Rea
   }
 
   handleReset = () => {
-    this.setState({ hasError: false, error: null });
-  };
-
-  handleExportAndReset = () => {
-    exportData();
     this.setState({ hasError: false, error: null });
   };
 
@@ -52,38 +46,21 @@ export default class ErrorBoundary extends React.Component<{ children: React.Rea
           <p style={{ color: '#94a3b8', fontSize: '0.9rem', marginBottom: '1.5rem', maxWidth: 320 }}>
             אירעה שגיאה בלתי צפויה. הנתונים שלך שמורים — ניתן לייצא גיבוי ולנסות שוב.
           </p>
-          <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap', justifyContent: 'center' }}>
-            <button
-              onClick={this.handleReset}
-              style={{
-                padding: '0.7rem 1.4rem',
-                background: '#4f46e5',
-                color: 'white',
-                border: 'none',
-                borderRadius: 12,
-                fontSize: '0.95rem',
-                fontWeight: 600,
-                cursor: 'pointer',
-              }}
-            >
-              🔄 נסה שוב
-            </button>
-            <button
-              onClick={this.handleExportAndReset}
-              style={{
-                padding: '0.7rem 1.4rem',
-                background: 'transparent',
-                color: '#94a3b8',
-                border: '1px solid #475569',
-                borderRadius: 12,
-                fontSize: '0.95rem',
-                fontWeight: 600,
-                cursor: 'pointer',
-              }}
-            >
-              📤 ייצא גיבוי ונסה שוב
-            </button>
-          </div>
+          <button
+            onClick={this.handleReset}
+            style={{
+              padding: '0.7rem 1.4rem',
+              background: '#4f46e5',
+              color: 'white',
+              border: 'none',
+              borderRadius: 12,
+              fontSize: '0.95rem',
+              fontWeight: 600,
+              cursor: 'pointer',
+            }}
+          >
+            🔄 נסה שוב
+          </button>
           {this.state.error && (
             <details style={{ marginTop: '1.5rem', maxWidth: 400, textAlign: 'start' }}>
               <summary style={{ color: '#94a3b8', fontSize: '0.8rem', cursor: 'pointer' }}>פרטי שגיאה</summary>
