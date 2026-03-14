@@ -18,6 +18,7 @@ interface SessionExercise {
   instructions: Instructions | string;
   restTime: number;
   supersetGroup?: string;
+  bodyweight?: boolean;
   sets: SessionSet[];
 }
 
@@ -113,6 +114,7 @@ export default function WorkoutSessionPage() {
         instructions: ex.instructions || '',
         restTime: ex.restTime || 90,
         supersetGroup: ex.supersetGroup,
+        bodyweight: ex.bodyweight || undefined,
         sets: Array.from({ length: ex.sets }, (_, i) => ({
           setNum: i + 1,
           weight: lastSets?.[i]?.weight ?? (ex.weight || 0),
@@ -251,9 +253,11 @@ export default function WorkoutSessionPage() {
 
   const currentEx = session[currentExIndex];
 
-  // PR detection: check if any done set exceeds the all-time max for current exercise
+  // PR detection: check if any done set exceeds the all-time max for current exercise (skip for bodyweight)
   const currentPrMax = currentEx ? getMaxWeight(currentEx.exerciseId, currentEx.name) : 0;
-  const currentExHasPR = currentEx?.sets.some((s) => s.done && s.weight > currentPrMax && currentPrMax > 0) ?? false;
+  const currentExHasPR =
+    !currentEx?.bodyweight &&
+    (currentEx?.sets.some((s) => s.done && s.weight > currentPrMax && currentPrMax > 0) ?? false);
 
   return (
     <div>
@@ -325,6 +329,9 @@ export default function WorkoutSessionPage() {
           )}
           <div className="card-title" style={{ marginBottom: '0.3rem' }}>
             {currentEx.name}
+            {currentEx.bodyweight && (
+              <span style={{ marginRight: '0.5rem', fontSize: '0.75rem', color: 'var(--primary-light)', fontWeight: 600 }}>🏃 BW</span>
+            )}
             {currentExHasPR && (
               <span style={{ marginRight: '0.5rem', fontSize: '0.8rem', color: 'var(--warning)' }}>🏆 שיא חדש!</span>
             )}
@@ -340,13 +347,13 @@ export default function WorkoutSessionPage() {
             style={{ color: 'var(--text-muted)', fontSize: '0.8rem', borderBottom: '1px solid var(--border)' }}
           >
             <span className="set-number">סט</span>
-            <span style={{ textAlign: 'center' }}>משקל (ק&quot;ג)</span>
+            <span style={{ textAlign: 'center' }}>{currentEx.bodyweight ? 'נוסף (ק"ג)' : 'משקל (ק"ג)'}</span>
             <span style={{ textAlign: 'center' }}>חזרות</span>
             <span>✓</span>
           </div>
 
           {currentEx.sets.map((set, sIdx) => {
-            const isPR = set.done && set.weight > currentPrMax && currentPrMax > 0;
+            const isPR = !currentEx.bodyweight && set.done && set.weight > currentPrMax && currentPrMax > 0;
             return (
             <div key={sIdx} className="set-row">
               <span className="set-number">{set.setNum}</span>

@@ -15,6 +15,7 @@ export interface Exercise {
   restTime: number;
   instructions: Instructions;
   supersetGroup?: string;
+  bodyweight?: boolean;
 }
 
 export interface Workout {
@@ -62,6 +63,7 @@ export interface BankExercise {
   defaultSets: number;
   defaultReps: number;
   defaultRepsMax?: number;
+  bodyweight?: boolean;
 }
 
 export interface AppState {

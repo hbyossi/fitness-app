@@ -18,6 +18,7 @@ export default function ExerciseForm({ onAdd, exerciseBank, compact, onCancel }:
   const [exReps, setExReps] = useState('12');
   const [exWeight, setExWeight] = useState('');
   const [exRestTime, setExRestTime] = useState('90');
+  const [exBodyweight, setExBodyweight] = useState(false);
   const [exInstructions, setExInstructions] = useState<Instructions>({
     startingPosition: '',
     execution: '',
@@ -34,6 +35,7 @@ export default function ExerciseForm({ onAdd, exerciseBank, compact, onCancel }:
     setExInstructions(normalizeInstructions(ex.instructions));
     setExSets(String(ex.defaultSets || 3));
     setExReps(formatReps(ex.defaultReps || 12, ex.defaultRepsMax));
+    setExBodyweight(ex.bodyweight || false);
     setBankSearch('');
   };
 
@@ -50,13 +52,15 @@ export default function ExerciseForm({ onAdd, exerciseBank, compact, onCancel }:
       sets: parseInt(exSets) || 3,
       reps,
       ...(repsMax ? { repsMax } : {}),
-      weight: parseFloat(exWeight) || 0,
+      weight: exBodyweight ? 0 : parseFloat(exWeight) || 0,
       restTime: parseInt(exRestTime) || 90,
       instructions: exInstructions,
+      ...(exBodyweight ? { bodyweight: true } : {}),
     });
     setExName('');
     setExWeight('');
     setExRestTime('90');
+    setExBodyweight(false);
     setExInstructions({ startingPosition: '', execution: '', tempo: '', notes: '' });
   };
 
@@ -82,7 +86,7 @@ export default function ExerciseForm({ onAdd, exerciseBank, compact, onCancel }:
             <option value="">בחר תרגיל...</option>
             {filteredBank.map((ex) => (
               <option key={ex.id} value={ex.id}>
-                {ex.name} ({ex.muscleGroup})
+                {ex.name} ({ex.muscleGroup}){ex.bodyweight ? ' · BW' : ''}
               </option>
             ))}
           </select>
@@ -109,6 +113,21 @@ export default function ExerciseForm({ onAdd, exerciseBank, compact, onCancel }:
           </button>
         )}
       </div>
+
+      {/* Bodyweight toggle */}
+      <div className="form-group" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.4rem' }}>
+        <input
+          type="checkbox"
+          id="ex-bodyweight"
+          checked={exBodyweight}
+          onChange={(e) => setExBodyweight(e.target.checked)}
+          style={{ width: 16, height: 16, cursor: 'pointer' }}
+        />
+        <label htmlFor="ex-bodyweight" style={{ fontSize: '0.9rem', cursor: 'pointer', userSelect: 'none' }}>
+          🏃 תרגיל משקל גוף
+        </label>
+      </div>
+
       <div className="form-row-3">
         <div className="form-group">
           <label className="form-label">סטים</label>
@@ -131,15 +150,16 @@ export default function ExerciseForm({ onAdd, exerciseBank, compact, onCancel }:
           />
         </div>
         <div className="form-group">
-          <label className="form-label">משקל (ק&quot;ג)</label>
+          <label className="form-label">{exBodyweight ? 'משקל נוסף (ק"ג)' : 'משקל (ק"ג)'}</label>
           <input
             className="form-input"
             type="number"
             min="0"
             step="0.5"
-            value={exWeight}
+            value={exBodyweight ? '' : exWeight}
             onChange={(e) => setExWeight(e.target.value)}
-            placeholder="0"
+            placeholder={exBodyweight ? 'אופציונלי' : '0'}
+            disabled={exBodyweight}
           />
         </div>
       </div>

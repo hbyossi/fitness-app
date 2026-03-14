@@ -25,6 +25,7 @@ export default function ExerciseBankPage() {
   const [muscleGroup, setMuscleGroup] = useState(MUSCLE_GROUPS[0]);
   const [defaultSets, setDefaultSets] = useState('3');
   const [defaultReps, setDefaultReps] = useState('12');
+  const [bodyweight, setBodyweight] = useState(false);
 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState('');
@@ -37,6 +38,7 @@ export default function ExerciseBankPage() {
   const [editMuscle, setEditMuscle] = useState('');
   const [editSets, setEditSets] = useState('');
   const [editReps, setEditReps] = useState('');
+  const [editBodyweight, setEditBodyweight] = useState(false);
 
   const [deletedExercise, setDeletedExercise] = useState<BankExercise | null>(null);
   const [filter, setFilter] = useState('');
@@ -54,12 +56,14 @@ export default function ExerciseBankPage() {
         defaultSets: parseInt(defaultSets) || 3,
         defaultReps: reps,
         ...(repsMax ? { defaultRepsMax: repsMax } : {}),
+        ...(bodyweight ? { bodyweight: true } : {}),
       },
     });
     setName('');
     setInstructions({ startingPosition: '', execution: '', tempo: '', notes: '' });
     setDefaultSets('3');
     setDefaultReps('12');
+    setBodyweight(false);
   };
 
   const startEdit = (ex: BankExercise) => {
@@ -69,6 +73,7 @@ export default function ExerciseBankPage() {
     setEditMuscle(ex.muscleGroup);
     setEditSets(String(ex.defaultSets || 3));
     setEditReps(formatReps(ex.defaultReps || 12, ex.defaultRepsMax));
+    setEditBodyweight(ex.bodyweight || false);
   };
 
   const saveEdit = () => {
@@ -84,6 +89,7 @@ export default function ExerciseBankPage() {
         defaultSets: parseInt(editSets) || 3,
         defaultReps: reps,
         ...(repsMax ? { defaultRepsMax: repsMax } : {}),
+        bodyweight: editBodyweight || undefined,
       },
     });
     setEditingId(null);
@@ -148,6 +154,18 @@ export default function ExerciseBankPage() {
               </option>
             ))}
           </select>
+        </div>
+        <div className="form-group" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <input
+            type="checkbox"
+            id="bank-bodyweight"
+            checked={bodyweight}
+            onChange={(e) => setBodyweight(e.target.checked)}
+            style={{ width: 16, height: 16, cursor: 'pointer' }}
+          />
+          <label htmlFor="bank-bodyweight" style={{ fontSize: '0.9rem', cursor: 'pointer', userSelect: 'none' }}>
+            🏃 תרגיל משקל גוף
+          </label>
         </div>
         <div className="form-row">
           <div className="form-group">
@@ -235,6 +253,18 @@ export default function ExerciseBankPage() {
                   ))}
                 </select>
               </div>
+              <div className="form-group" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <input
+                  type="checkbox"
+                  id="edit-bodyweight"
+                  checked={editBodyweight}
+                  onChange={(e) => setEditBodyweight(e.target.checked)}
+                  style={{ width: 16, height: 16, cursor: 'pointer' }}
+                />
+                <label htmlFor="edit-bodyweight" style={{ fontSize: '0.9rem', cursor: 'pointer', userSelect: 'none' }}>
+                  🏃 תרגיל משקל גוף
+                </label>
+              </div>
               <div className="form-row">
                 <div className="form-group">
                   <label className="form-label">סטים</label>
@@ -274,6 +304,7 @@ export default function ExerciseBankPage() {
                   <div className="card-title">{ex.name}</div>
                   <div className="card-subtitle">
                     {ex.muscleGroup} · {ex.defaultSets || 3}×{formatReps(ex.defaultReps || 12, ex.defaultRepsMax)}
+                    {ex.bodyweight && <span style={{ color: 'var(--primary-light)', fontWeight: 600, marginRight: '0.4rem' }}> · 🏃 BW</span>}
                   </div>
                 </div>
                 <div style={{ display: 'flex', gap: '0.3rem' }}>

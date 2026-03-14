@@ -27,6 +27,7 @@ function SortableExercise({ ex, onRemove, onUpdate }: SortableExerciseProps) {
   const [editReps, setEditReps] = useState(formatReps(ex.reps, ex.repsMax));
   const [editWeight, setEditWeight] = useState(String(ex.weight || 0));
   const [editRestTime, setEditRestTime] = useState(String(ex.restTime || 90));
+  const [editBodyweight, setEditBodyweight] = useState(ex.bodyweight || false);
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -40,8 +41,9 @@ function SortableExercise({ ex, onRemove, onUpdate }: SortableExerciseProps) {
       sets: parseInt(editSets) || 3,
       reps,
       repsMax: repsMax || undefined,
-      weight: parseFloat(editWeight) || 0,
+      weight: editBodyweight ? 0 : parseFloat(editWeight) || 0,
       restTime: parseInt(editRestTime) || 90,
+      bodyweight: editBodyweight || undefined,
     });
     setEditing(false);
   };
@@ -55,6 +57,15 @@ function SortableExercise({ ex, onRemove, onUpdate }: SortableExerciseProps) {
         <div className="exercise-name">{ex.name}</div>
         {editing ? (
           <div style={{ display: 'flex', gap: '0.3rem', flexWrap: 'wrap', marginTop: '0.3rem' }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.8rem', cursor: 'pointer', width: '100%' }}>
+              <input
+                type="checkbox"
+                checked={editBodyweight}
+                onChange={(e) => setEditBodyweight(e.target.checked)}
+                style={{ width: 14, height: 14 }}
+              />
+              🏃 BW
+            </label>
             <input
               className="form-input"
               type="number"
@@ -77,10 +88,11 @@ function SortableExercise({ ex, onRemove, onUpdate }: SortableExerciseProps) {
               type="number"
               min="0"
               step="0.5"
-              value={editWeight}
+              value={editBodyweight ? '' : editWeight}
               onChange={(e) => setEditWeight(e.target.value)}
               style={{ width: 70, padding: '0.3rem' }}
-              placeholder='ק"ג'
+              placeholder={editBodyweight ? '+ק"ג' : 'ק"ג'}
+              disabled={editBodyweight}
             />
             <input
               className="form-input"
@@ -112,7 +124,10 @@ function SortableExercise({ ex, onRemove, onUpdate }: SortableExerciseProps) {
         ) : (
           <>
             <div className="exercise-detail">
-              {ex.sets} סטים × {formatReps(ex.reps, ex.repsMax)} חזרות{ex.weight > 0 && ` · ${ex.weight} ק"ג`}
+              {ex.bodyweight && <span style={{ color: 'var(--primary-light)', fontWeight: 600, marginLeft: '0.3rem' }}>🏃 BW</span>}
+              {ex.sets} סטים × {formatReps(ex.reps, ex.repsMax)} חזרות
+              {!ex.bodyweight && ex.weight > 0 && ` · ${ex.weight} ק"ג`}
+              {ex.bodyweight && ex.weight > 0 && ` · +${ex.weight} ק"ג`}
               {ex.restTime && ex.restTime !== 90 && ` · מנוחה ${ex.restTime}ש'`}
             </div>
             {hasInstructions(ex.instructions) && <InstructionsToggle instructions={ex.instructions} />}
