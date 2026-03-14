@@ -1,10 +1,60 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { usePlans, useBank, useHistory, useImportData, useMergeData } from '../context/AppProvider';
 import UndoToast from '../components/UndoToast';
 import ExerciseForm from '../components/ExerciseForm';
 import { exportAppState, validateImportData } from '../utils/storage';
-import type { Exercise, Plan } from '../types';
+import type { Exercise, Plan, HistoryEntry } from '../types';
+
+function calcStreak(history: HistoryEntry[]): number {
+  if (!history.length) return 0;
+  const dates = new Set(history.map((h) => h.date.slice(0, 10)));
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  let cur = new Date(today);
+  // If no workout today yet, allow starting from yesterday
+  if (!dates.has(cur.toISOString().slice(0, 10))) {
+    cur.setDate(cur.getDate() - 1);
+  }
+  let streak = 0;
+  while (dates.has(cur.toISOString().slice(0, 10))) {
+    streak++;
+    cur.setDate(cur.getDate() - 1);
+  }
+  return streak;
+}
+
+function calcWeeklyCount(history: HistoryEntry[]): number {
+  const now = new Date();
+  const startOfWeek = new Date(now);
+  startOfWeek.setDate(now.getDate() - now.getDay()); // Sunday
+  startOfWeek.setHours(0, 0, 0, 0);
+  return history.filter((h) => new Date(h.date) >= startOfWeek).length;
+}
+
+function WeeklyRing({ done, goal }: { done: number; goal: number }) {
+  const r = 22;
+  const circ = 2 * Math.PI * r;
+  const dash = goal > 0 ? Math.min(done / goal, 1) * circ : 0;
+  const complete = done >= goal;
+  return (
+    <svg width="56" height="56" viewBox="0 0 56 56" style={{ display: 'block', margin: '0 auto' }}>
+      <circle cx="28" cy="28" r={r} fill="none" stroke="var(--bg-input)" strokeWidth="5" />
+      <circle
+        cx="28" cy="28" r={r} fill="none"
+        stroke={complete ? 'var(--success)' : 'var(--primary)'}
+        strokeWidth="5"
+        strokeDasharray={`${dash} ${circ}`}
+        strokeLinecap="round"
+        transform="rotate(-90 28 28)"
+        style={{ transition: 'stroke-dasharray 0.5s ease' }}
+      />
+      <text x="28" y="33" textAnchor="middle" fontSize="13" fontWeight="700" fill="var(--text)">
+        {done}/{goal}
+      </text>
+    </svg>
+  );
+}
 
 export default function HomePage() {
   const { plans, dispatchPlans } = usePlans();
@@ -18,6 +68,19 @@ export default function HomePage() {
   const [expandedPlan, setExpandedPlan] = useState<string | null>(null);
   const [planFilter, setPlanFilter] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const streak = useMemo(() => calcStreak(history), [history]);
+  const weeklyDone = useMemo(() => calcWeeklyCount(history), [history]);
+  const [weeklyGoal, setWeeklyGoalRaw] = useState<number>(() => {
+    const v = localStorage.getItem('fitness_weekly_goal');
+    return v ? Math.max(1, Math.min(7, parseInt(v, 10))) : 3;
+  });
+  const [editingGoal, setEditingGoal] = useState(false);
+  const setWeeklyGoal = (n: number) => {
+    setWeeklyGoalRaw(n);
+    localStorage.setItem('fitness_weekly_goal', String(n));
+    setEditingGoal(false);
+  };
 
   const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -103,6 +166,52 @@ export default function HomePage() {
         <h1 className="page-title">התוכניות שלי</h1>
         <span className="badge badge-primary">{plans.length} תוכניות</span>
       </div>
+
+      {/* Streak + Weekly Goal */}
+      {history.length > 0 && (
+        <div style={{ display: 'flex', gap: '0.8rem', marginBottom: '1rem' }}>
+          {/* Streak */}
+          <div className="card" style={{ flex: 1, textAlign: 'center', padding: '0.8rem 0.5rem' }}>
+            <div style={{ fontSize: '1.6rem', lineHeight: 1 }}>{streak > 0 ? '🔥' : '💤'}</div>
+            <div style={{ fontSize: '1.6rem', fontWeight: 800, lineHeight: 1.2 }}>{streak}</div>
+            <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>
+              {streak === 1 ? 'יום רצוף' : 'ימים רצופים'}
+            </div>
+          </div>
+
+          {/* Weekly goal */}
+          <div className="card" style={{ flex: 1, textAlign: 'center', padding: '0.8rem 0.5rem' }}>
+            <WeeklyRing done={weeklyDone} goal={weeklyGoal} />
+            <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
+              {weeklyDone >= weeklyGoal ? '🎉 יעד השבוע הושג!' : 'אימונים השבוע'}
+            </div>
+            <button
+              style={{ fontSize: '0.68rem', color: 'var(--text-muted)', background: 'none', border: 'none', cursor: 'pointer', padding: '0.1rem 0', marginTop: '0.1rem' }}
+              onClick={() => setEditingGoal((v) => !v)}
+            >
+              יעד: {weeklyGoal} ✏️
+            </button>
+            {editingGoal && (
+              <div style={{ display: 'flex', justifyContent: 'center', gap: '0.25rem', marginTop: '0.4rem', flexWrap: 'wrap' }}>
+                {[1, 2, 3, 4, 5, 6, 7].map((n) => (
+                  <button
+                    key={n}
+                    onClick={() => setWeeklyGoal(n)}
+                    style={{
+                      width: 26, height: 26, borderRadius: '50%', border: 'none', cursor: 'pointer',
+                      background: n === weeklyGoal ? 'var(--primary)' : 'var(--bg-input)',
+                      color: n === weeklyGoal ? 'white' : 'var(--text)',
+                      fontSize: '0.78rem', fontWeight: 600,
+                    }}
+                  >
+                    {n}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Next Workout Suggestion */}
       {nextWorkout && plans.length > 0 && (
