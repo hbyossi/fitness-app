@@ -27,6 +27,14 @@ export default function RestTimer({
 
   const notifyDone = useCallback(() => {
     try { navigator.vibrate?.([200, 100, 200]); } catch { /* unsupported */ }
+    if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+      new Notification('⏱️ זמן מנוחה הסתיים!', {
+        body: 'זמן לסט הבא 💪',
+        icon: '/icon-192.svg',
+        tag: 'rest-timer',
+        silent: true,
+      });
+    }
   }, []);
 
   // Auto-start when a set is completed
@@ -59,6 +67,9 @@ export default function RestTimer({
 
   const start = () => {
     if (seconds === 0) setSeconds(defaultSeconds);
+    if (typeof Notification !== 'undefined' && Notification.permission === 'default') {
+      Notification.requestPermission();
+    }
     setRunning(true);
   };
 

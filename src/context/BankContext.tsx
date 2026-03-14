@@ -19,6 +19,11 @@ export function bankReducer(state: BankExercise[], action: BankAction): BankExer
       return state.filter((e) => e.id !== action.payload);
     case 'IMPORT_BANK':
       return action.payload;
+    case 'MERGE_BANK': {
+      const existingIds = new Set(state.map((e) => e.id));
+      const newExercises = action.payload.filter((e) => !existingIds.has(e.id));
+      return [...state, ...newExercises];
+    }
     case 'RESTORE_BANK_EXERCISE':
       return [...state, action.payload];
     default:

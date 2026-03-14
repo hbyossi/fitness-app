@@ -1,8 +1,84 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useHistory } from '../context/AppProvider';
 import { formatTime } from '../utils/helpers';
 import UndoToast from '../components/UndoToast';
 import type { HistoryEntry } from '../types';
+
+function WorkoutHeatmap({ history }: { history: HistoryEntry[] }) {
+  const countMap = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const entry of history) {
+      const key = entry.date.slice(0, 10);
+      map.set(key, (map.get(key) || 0) + 1);
+    }
+    return map;
+  }, [history]);
+
+  // Build weeks: start from the Sunday 14 weeks before the current week's Sunday
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const startSunday = new Date(today);
+  startSunday.setDate(today.getDate() - today.getDay() - 14 * 7);
+
+  const weeks: Date[][] = [];
+  const cursor = new Date(startSunday);
+  while (cursor <= today) {
+    const week: Date[] = [];
+    for (let i = 0; i < 7; i++) {
+      week.push(new Date(cursor));
+      cursor.setDate(cursor.getDate() + 1);
+    }
+    weeks.push(week);
+  }
+
+  const dayLabels = ['א', 'ב', 'ג', 'ד', 'ה', 'ו', 'ש'];
+
+  return (
+    <div className="card" style={{ overflowX: 'auto' }}>
+      <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>📅 פעילות 15 שבועות אחרונים</div>
+      <div style={{ display: 'flex', gap: 3 }}>
+        {/* Day-of-week labels */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 3, paddingTop: 18 }}>
+          {dayLabels.map((label, i) => (
+            <div key={i} style={{ height: 12, fontSize: '0.55rem', color: 'var(--text-muted)', lineHeight: '12px', width: 10, textAlign: 'center' }}>
+              {i % 2 === 0 ? label : ''}
+            </div>
+          ))}
+        </div>
+        {/* Week columns */}
+        {weeks.map((week, wi) => (
+          <div key={wi} style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+            {/* Month label on first week of the month */}
+            <div style={{ height: 16, fontSize: '0.55rem', color: 'var(--text-muted)', whiteSpace: 'nowrap', lineHeight: '16px' }}>
+              {week[0].getDate() <= 7 ? week[0].toLocaleDateString('he-IL', { month: 'short' }) : ''}
+            </div>
+            {week.map((day, di) => {
+              const key = day.toISOString().slice(0, 10);
+              const count = countMap.get(key) || 0;
+              const isFuture = day > today;
+              const bg = isFuture ? 'transparent' : count === 0 ? 'var(--bg-input)' : count === 1 ? 'var(--primary)' : 'var(--success)';
+              return (
+                <div
+                  key={di}
+                  title={`${day.toLocaleDateString('he-IL')}: ${count} אימונים`}
+                  style={{ width: 12, height: 12, borderRadius: 2, background: bg }}
+                />
+              );
+            })}
+          </div>
+        ))}
+      </div>
+      {/* Legend */}
+      <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center', marginTop: '0.5rem', fontSize: '0.7rem', color: 'var(--text-muted)' }}>
+        <span>פחות</span>
+        <div style={{ width: 10, height: 10, borderRadius: 2, background: 'var(--bg-input)' }} />
+        <div style={{ width: 10, height: 10, borderRadius: 2, background: 'var(--primary)' }} />
+        <div style={{ width: 10, height: 10, borderRadius: 2, background: 'var(--success)' }} />
+        <span>יותר</span>
+      </div>
+    </div>
+  );
+}
 
 export default function HistoryPage() {
   const { history, dispatchHistory } = useHistory();
@@ -79,6 +155,9 @@ export default function HistoryPage() {
           )}
         </div>
       </div>
+
+      {/* Activity heatmap */}
+      {history.length > 0 && <WorkoutHeatmap history={history} />}
 
       {/* Date filter */}
       {history.length > 0 && (

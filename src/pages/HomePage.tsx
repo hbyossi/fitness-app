@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { usePlans, useBank, useHistory, useImportData } from '../context/AppProvider';
+import { usePlans, useBank, useHistory, useImportData, useMergeData } from '../context/AppProvider';
 import UndoToast from '../components/UndoToast';
 import ExerciseForm from '../components/ExerciseForm';
 import { exportData, validateImportData, getStorageUsage } from '../utils/storage';
@@ -57,6 +57,7 @@ export default function HomePage() {
   const { exerciseBank } = useBank();
   const { history } = useHistory();
   const importData = useImportData();
+  const mergeData = useMergeData();
   const navigate = useNavigate();
   const [deletedPlan, setDeletedPlan] = useState<Plan | null>(null);
   const [addingExercise, setAddingExercise] = useState<{ planId: string; workoutId: string } | null>(null);
@@ -75,14 +76,17 @@ export default function HomePage() {
           alert('קובץ הגיבוי לא תקין. ודא שזהו קובץ JSON שיוצא מהאפליקציה.');
           return;
         }
-        if (
-          !window.confirm(
-            `ייבוא יחליף את כל הנתונים הנוכחיים. נמצאו ${data.plans.length} תוכניות, ${data.history.length} אימונים ו-${data.exerciseBank.length} תרגילים במאגר. להמשיך?`,
-          )
-        )
-          return;
-        importData(data);
-        alert('הנתונים יובאו בהצלחה! ✅');
+        const summary = `נמצאו ${data.plans.length} תוכניות, ${data.history.length} אימונים ו-${data.exerciseBank.length} תרגילים במאגר.`;
+        // Ask: merge (OK) or go to replace flow (Cancel)
+        const doMerge = window.confirm(`${summary}\n\nאישור = מיזוג (הוסף פריטים חדשים בלבד)\nביטול = החלפה מלאה של כל הנתונים`);
+        if (doMerge) {
+          mergeData(data);
+          alert('הנתונים מוזגו בהצלחה! ✅');
+        } else {
+          if (!window.confirm(`החלפה תמחק את כל הנתונים הנוכחיים ותחליף אותם בקובץ הגיבוי.\n${summary}\n\nלהמשיך?`)) return;
+          importData(data);
+          alert('הנתונים יובאו בהצלחה! ✅');
+        }
       } catch {
         alert('שגיאה בקריאת הקובץ. ודא שזהו קובץ JSON תקין.');
       }

@@ -57,6 +57,11 @@ export function plansReducer(state: Plan[], action: PlanAction): Plan[] {
       return action.payload;
     case 'RESTORE_PLAN':
       return [...state, action.payload];
+    case 'MERGE_PLANS': {
+      const existingIds = new Set(state.map((p) => p.id));
+      const newPlans = action.payload.filter((p) => !existingIds.has(p.id));
+      return [...state, ...newPlans];
+    }
     default:
       return state;
   }

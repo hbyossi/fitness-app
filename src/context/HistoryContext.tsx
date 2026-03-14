@@ -30,6 +30,12 @@ export function historyReducer(state: HistoryEntry[], action: HistoryAction): Hi
       return [];
     case 'IMPORT_HISTORY':
       return action.payload;
+    case 'MERGE_HISTORY': {
+      const existingIds = new Set(state.map((h) => h.id));
+      const newEntries = action.payload.filter((h) => !existingIds.has(h.id));
+      // Merge and re-sort newest first
+      return [...newEntries, ...state].sort((a, b) => b.date.localeCompare(a.date));
+    }
     case 'RESTORE_HISTORY': {
       const { entry, index } = action.payload;
       const copy = [...state];

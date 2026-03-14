@@ -149,7 +149,7 @@ export { usePlans } from './PlansContext';
 export { useHistory } from './HistoryContext';
 export { useBank } from './BankContext';
 
-// Combined import hook
+// Combined import hook (replaces all data)
 export function useImportData() {
   const { dispatchPlans } = usePlans();
   const { dispatchHistory } = useHistory();
@@ -160,6 +160,22 @@ export function useImportData() {
       dispatchPlans({ type: 'IMPORT_PLANS', payload: data.plans || [] });
       dispatchHistory({ type: 'IMPORT_HISTORY', payload: data.history || [] });
       dispatchBank({ type: 'IMPORT_BANK', payload: data.exerciseBank || [] });
+    },
+    [dispatchPlans, dispatchHistory, dispatchBank],
+  );
+}
+
+// Combined merge hook (adds new items, keeps existing)
+export function useMergeData() {
+  const { dispatchPlans } = usePlans();
+  const { dispatchHistory } = useHistory();
+  const { dispatchBank } = useBank();
+
+  return useCallback(
+    (data: AppState) => {
+      dispatchPlans({ type: 'MERGE_PLANS', payload: data.plans || [] });
+      dispatchHistory({ type: 'MERGE_HISTORY', payload: data.history || [] });
+      dispatchBank({ type: 'MERGE_BANK', payload: data.exerciseBank || [] });
     },
     [dispatchPlans, dispatchHistory, dispatchBank],
   );
