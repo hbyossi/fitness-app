@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useCallback, useState } from 'react';
-import { debouncedSaveCloud, loadCloudData } from '../utils/firebaseSync';
+import { debouncedSaveCloud, loadCloudData, initHistoryTracking } from '../utils/firebaseSync';
 import { useAuth } from './AuthContext';
 import { PlansProvider, usePlans } from './PlansContext';
 import { HistoryProvider, useHistory } from './HistoryContext';
@@ -62,11 +62,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         const cloudData = await loadCloudData(user!.uid);
         if (cancelled) return;
         if (cloudData && Array.isArray(cloudData.plans)) {
+          initHistoryTracking(cloudData.history);
           setState(cloudData);
           setWeeklyGoalState(cloudData.weeklyGoal ?? 3);
           return;
         }
         // Truly new user — no data exists yet
+        initHistoryTracking([]);
         setState(emptyState);
       } catch (e) {
         console.error('Failed to load cloud data:', e);

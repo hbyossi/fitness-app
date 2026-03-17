@@ -115,19 +115,40 @@ export async function saveCloudData(uid: string, data: AppState): Promise<void> 
 }
 
 let savePending: ReturnType<typeof setTimeout> | null = null;
+let lastSyncedHistoryIds: Set<string> = new Set();
+
+/** Call once after initial load to seed the tracking set. */
+export function initHistoryTracking(history: HistoryEntry[]): void {
+  lastSyncedHistoryIds = new Set(history.map((e) => e.id));
+}
 
 export function debouncedSaveCloud(uid: string, data: AppState): void {
   if (savePending) clearTimeout(savePending);
   savePending = setTimeout(() => {
     const { history, ...mainData } = data;
+    const currentHistory = history || [];
+
+    // Always save the main doc (plans, bank, weeklyGoal — small)
     setDoc(mainDocRef(uid), { ...mainData, _lastModified: Date.now() })
       .catch((e) => {
         console.error('Save failed:', e);
         alert('שגיאה בשמירת הנתונים: ' + (e instanceof Error ? e.message : String(e)));
       });
-    if (history && history.length > 0) {
-      batchUpsertHistory(uid, history).catch(console.error);
+
+    // Compute history delta
+    const currentIds = new Set(currentHistory.map((e) => e.id));
+    const added = currentHistory.filter((e) => !lastSyncedHistoryIds.has(e.id));
+    const removedIds = [...lastSyncedHistoryIds].filter((id) => !currentIds.has(id));
+
+    if (added.length > 0) {
+      batchUpsertHistory(uid, added).catch(console.error);
     }
+    if (removedIds.length > 0) {
+      batchDeleteHistory(uid, removedIds).catch(console.error);
+    }
+
+    // Update tracking set
+    lastSyncedHistoryIds = currentIds;
   }, 1000);
 }
 
