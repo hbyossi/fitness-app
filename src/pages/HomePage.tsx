@@ -1,6 +1,6 @@
 import React, { useState, useRef, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { usePlans, useBank, useHistory, useImportData, useMergeData } from '../context/AppProvider';
+import { usePlans, useBank, useHistory, useImportData, useMergeData, useWeeklyGoal } from '../context/AppProvider';
 import UndoToast from '../components/UndoToast';
 import ExerciseForm from '../components/ExerciseForm';
 import { exportAppState, validateImportData } from '../utils/storage';
@@ -71,14 +71,10 @@ export default function HomePage() {
 
   const streak = useMemo(() => calcStreak(history), [history]);
   const weeklyDone = useMemo(() => calcWeeklyCount(history), [history]);
-  const [weeklyGoal, setWeeklyGoalRaw] = useState<number>(() => {
-    const v = localStorage.getItem('fitness_weekly_goal');
-    return v ? Math.max(1, Math.min(7, parseInt(v, 10))) : 3;
-  });
+  const { weeklyGoal, setWeeklyGoal: setWeeklyGoalCtx } = useWeeklyGoal();
   const [editingGoal, setEditingGoal] = useState(false);
   const setWeeklyGoal = (n: number) => {
-    setWeeklyGoalRaw(n);
-    localStorage.setItem('fitness_weekly_goal', String(n));
+    setWeeklyGoalCtx(Math.max(1, Math.min(7, n)));
     setEditingGoal(false);
   };
 

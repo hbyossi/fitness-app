@@ -22,41 +22,8 @@ interface SessionExercise {
   sets: SessionSet[];
 }
 
-interface SavedSession {
-  planId: string;
-  workoutId: string;
-  session: SessionExercise[];
-  currentExIndex: number;
-  startTime: number;
-  notes: string;
-}
-
-const SESSION_KEY = 'fitness_workout_session';
-
-function loadSession(): SavedSession | null {
-  try {
-    const raw = sessionStorage.getItem(SESSION_KEY);
-    return raw ? JSON.parse(raw) : null;
-  } catch {
-    return null;
-  }
-}
-
-function saveSession(data: SavedSession): void {
-  try {
-    sessionStorage.setItem(SESSION_KEY, JSON.stringify(data));
-  } catch {
-    /* quota exceeded */
-  }
-}
-
-function clearSession(): void {
-  try {
-    sessionStorage.removeItem(SESSION_KEY);
-  } catch {
-    /* ignore */
-  }
-}
+// Session state is kept in React memory only — no local storage
+function clearSession(): void { /* no-op */ }
 
 export default function WorkoutSessionPage() {
   const { planId, workoutId } = useParams();
@@ -68,9 +35,7 @@ export default function WorkoutSessionPage() {
   const plan = plans.find((p) => p.id === planId);
   const workout = plan?.workouts.find((w) => w.id === workoutId);
 
-  const saved = useRef<SavedSession | null>(loadSession());
-  const isResume = saved.current?.planId === planId && saved.current?.workoutId === workoutId;
-  const startTimeRef = useRef(isResume ? saved.current!.startTime : Date.now());
+  const startTimeRef = useRef(Date.now());
 
   // Find last logged workout for this exercise to pre-fill weights (ID primary, name fallback)
   const getLastWeight = (exerciseId: string, exerciseName: string): HistorySet[] | null => {
@@ -104,7 +69,6 @@ export default function WorkoutSessionPage() {
 
   // Build session state: each exercise has sets with weight/reps/done
   const [session, setSession] = useState<SessionExercise[]>(() => {
-    if (isResume) return saved.current!.session;
     if (!workout) return [];
     return workout.exercises.map((ex) => {
       const lastSets = getLastWeight(ex.id, ex.name);
@@ -125,15 +89,10 @@ export default function WorkoutSessionPage() {
     });
   });
 
-  const [currentExIndex, setCurrentExIndex] = useState(isResume ? saved.current!.currentExIndex : 0);
+  const [currentExIndex, setCurrentExIndex] = useState(0);
   const [restTimerSignal, setRestTimerSignal] = useState(0);
-  const [notes, setNotes] = useState(isResume ? saved.current!.notes || '' : '');
+  const [notes, setNotes] = useState('');
 
-  // Persist session to sessionStorage on every change
-  useEffect(() => {
-    if (finished) return;
-    saveSession({ planId: planId!, workoutId: workoutId!, session, currentExIndex, startTime: startTimeRef.current, notes });
-  }, [session, currentExIndex, finished, planId, workoutId, notes]);
 
   // Prevent accidental page close/refresh during workout
   useEffect(() => {

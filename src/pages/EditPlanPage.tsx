@@ -67,9 +67,17 @@ export default function EditPlanPage() {
   };
 
   const removeExercise = (wIdx: number, exId: string) => {
-    setWorkouts((prev) =>
-      prev.map((w, i) => (i === wIdx ? { ...w, exercises: w.exercises.filter((e) => e.id !== exId) } : w)),
-    );
+    const workoutId = workouts[wIdx]?.id || workouts[wIdx]?.tempId;
+    setWorkouts((prev) => {
+      const updated = prev.map((w, i) =>
+        i === wIdx ? { ...w, exercises: w.exercises.filter((e) => e.id !== exId) } : w,
+      );
+      return updated.filter((w) => w.exercises.length > 0);
+    });
+    // Immediately persist to context so Persister saves to Firestore
+    if (planId && workoutId) {
+      dispatchPlans({ type: 'REMOVE_EXERCISE_FROM_PLAN', payload: { planId, workoutId, exerciseId: exId } });
+    }
   };
 
   const updateExercise = (wIdx: number, exId: string, updates: Partial<Exercise>) => {
@@ -86,9 +94,8 @@ export default function EditPlanPage() {
 
   const totalExercises = workouts.reduce((sum, w) => sum + w.exercises.length, 0);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!planName.trim() || workouts.length === 0 || totalExercises === 0 || !planId) return;
+  const handleSubmit = () => {
+    if (!planName.trim() || workouts.length === 0 || !planId) return;
     dispatchPlans({
       type: 'UPDATE_PLAN',
       payload: {
@@ -114,10 +121,10 @@ export default function EditPlanPage() {
         <h1 className="page-title">עריכת תוכנית</h1>
       </div>
 
-      <form onSubmit={handleSubmit}>
+      <div>
         <div className="form-group">
           <label className="form-label">שם התוכנית</label>
-          <input className="form-input" value={planName} onChange={(e) => setPlanName(e.target.value)} required />
+          <input className="form-input" value={planName} onChange={(e) => setPlanName(e.target.value)} />
         </div>
 
         {workouts.map((w, wIdx) => (
@@ -186,14 +193,15 @@ export default function EditPlanPage() {
         </div>
 
         <button
-          type="submit"
+          type="button"
           className="btn btn-success btn-full"
           style={{ marginTop: '0.5rem' }}
-          disabled={!planName.trim() || workouts.length === 0 || totalExercises === 0}
+          disabled={!planName.trim() || workouts.length === 0}
+          onClick={handleSubmit}
         >
           ✅ שמור שינויים
         </button>
-      </form>
+      </div>
     </div>
   );
 }

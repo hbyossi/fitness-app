@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useBank } from '../context/AppProvider';
+import { useBank, usePlans } from '../context/AppProvider';
 import { useAuth } from '../context/AuthContext';
 import { MUSCLE_GROUPS, formatReps, parseReps } from '../utils/helpers';
 import UndoToast from '../components/UndoToast';
@@ -15,6 +15,7 @@ import type { Instructions, BankExercise } from '../types';
 
 export default function ExerciseBankPage() {
   const { exerciseBank, dispatchBank } = useBank();
+  const { dispatchPlans } = usePlans();
   const { user } = useAuth();
   const bank = exerciseBank;
 
@@ -128,6 +129,7 @@ export default function ExerciseBankPage() {
     const ex = bank.find((e) => e.id === id);
     if (!ex) return;
     dispatchBank({ type: 'DELETE_BANK_EXERCISE', payload: id });
+    dispatchPlans({ type: 'REMOVE_EXERCISES_BY_NAME', payload: ex.name });
     setDeletedExercise(ex);
   };
 

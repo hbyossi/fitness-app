@@ -53,6 +53,27 @@ export function plansReducer(state: Plan[], action: PlanAction): Plan[] {
         };
       });
     }
+    case 'REMOVE_EXERCISE_FROM_PLAN': {
+      const { planId, workoutId, exerciseId } = action.payload;
+      return state.map((p) => {
+        if (p.id !== planId) return p;
+        return {
+          ...p,
+          workouts: p.workouts
+            .map((w) => w.id !== workoutId ? w : { ...w, exercises: w.exercises.filter((e) => e.id !== exerciseId) })
+            .filter((w) => w.exercises.length > 0),
+        };
+      });
+    }
+    case 'REMOVE_EXERCISES_BY_NAME': {
+      const name = action.payload;
+      return state.map((p) => ({
+        ...p,
+        workouts: p.workouts
+          .map((w) => ({ ...w, exercises: w.exercises.filter((e) => e.name !== name) }))
+          .filter((w) => w.exercises.length > 0),
+      }));
+    }
     case 'IMPORT_PLANS':
       return action.payload;
     case 'RESTORE_PLAN':

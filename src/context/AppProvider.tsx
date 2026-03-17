@@ -1,4 +1,4 @@
-import React, { useEffect, useCallback, useState } from 'react';
+import React, { createContext, useContext, useEffect, useCallback, useState } from 'react';
 import { debouncedSaveCloud, loadCloudData } from '../utils/firebaseSync';
 import { useAuth } from './AuthContext';
 import { PlansProvider, usePlans } from './PlansContext';
@@ -6,13 +6,27 @@ import { HistoryProvider, useHistory } from './HistoryContext';
 import { BankProvider, useBank } from './BankContext';
 import type { AppState } from '../types';
 
-const emptyState: AppState = { plans: [], history: [], exerciseBank: [] };
+const emptyState: AppState = { plans: [], history: [], exerciseBank: [], weeklyGoal: 3 };
 
-// Inner component that watches all three slices and persists to cloud
+// — Weekly goal context —
+interface WeeklyGoalContextType {
+  weeklyGoal: number;
+  setWeeklyGoal: (n: number) => void;
+}
+const WeeklyGoalContext = createContext<WeeklyGoalContextType | null>(null);
+
+export function useWeeklyGoal(): WeeklyGoalContextType {
+  const ctx = useContext(WeeklyGoalContext);
+  if (!ctx) throw new Error('useWeeklyGoal must be used within AppProvider');
+  return ctx;
+}
+
+// Inner component that watches all slices and persists to cloud
 function Persister({ children }: { children: React.ReactNode }) {
   const { plans } = usePlans();
   const { history } = useHistory();
   const { exerciseBank } = useBank();
+  const { weeklyGoal } = useWeeklyGoal();
   const { user } = useAuth();
   // Keep user in a ref so token refreshes (new User object, same UID) don't
   // trigger a save with potentially stale/empty state.
@@ -27,16 +41,16 @@ function Persister({ children }: { children: React.ReactNode }) {
       return;
     }
     if (userRef.current) {
-      debouncedSaveCloud(userRef.current.uid, { plans, history, exerciseBank });
+      debouncedSaveCloud(userRef.current.uid, { plans, history, exerciseBank, weeklyGoal });
     }
-  }, [plans, history, exerciseBank]);
+  }, [plans, history, exerciseBank, weeklyGoal]);
 
   return <>{children}</>;
 }
 
-
 export function AppProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<AppState | null>(null);
+  const [weeklyGoalState, setWeeklyGoalState] = useState<number>(3);
   const { user, loading: authLoading, signIn } = useAuth();
 
   useEffect(() => {
@@ -49,6 +63,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         if (cancelled) return;
         if (cloudData && Array.isArray(cloudData.plans)) {
           setState(cloudData);
+          setWeeklyGoalState(cloudData.weeklyGoal ?? 3);
           return;
         }
         // Truly new user — no data exists yet
@@ -106,15 +121,17 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <PlansProvider initialPlans={state.plans}>
-      <HistoryProvider initialHistory={state.history}>
-        <BankProvider initialBank={state.exerciseBank}>
-          <Persister>
-            {children}
-          </Persister>
-        </BankProvider>
-      </HistoryProvider>
-    </PlansProvider>
+    <WeeklyGoalContext.Provider value={{ weeklyGoal: weeklyGoalState, setWeeklyGoal: setWeeklyGoalState }}>
+      <PlansProvider initialPlans={state.plans}>
+        <HistoryProvider initialHistory={state.history}>
+          <BankProvider initialBank={state.exerciseBank}>
+            <Persister>
+              {children}
+            </Persister>
+          </BankProvider>
+        </HistoryProvider>
+      </PlansProvider>
+    </WeeklyGoalContext.Provider>
   );
 }
 

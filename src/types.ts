@@ -71,6 +71,7 @@ export interface AppState {
   plans: Plan[];
   history: HistoryEntry[];
   exerciseBank: BankExercise[];
+  weeklyGoal?: number;
 }
 
 export type PlanAction =
@@ -81,7 +82,9 @@ export type PlanAction =
   | { type: 'ADD_EXERCISE'; payload: { planId: string; workoutId: string; exercise: Omit<Exercise, 'id'> } }
   | { type: 'IMPORT_PLANS'; payload: Plan[] }
   | { type: 'RESTORE_PLAN'; payload: Plan }
-  | { type: 'MERGE_PLANS'; payload: Plan[] };
+  | { type: 'MERGE_PLANS'; payload: Plan[] }
+  | { type: 'REMOVE_EXERCISES_BY_NAME'; payload: string }
+  | { type: 'REMOVE_EXERCISE_FROM_PLAN'; payload: { planId: string; workoutId: string; exerciseId: string } };
 
 export type HistoryAction =
   | {

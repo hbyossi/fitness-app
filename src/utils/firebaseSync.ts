@@ -88,6 +88,7 @@ export async function loadCloudData(uid: string): Promise<AppState | null> {
     plans: mainData.plans || [],
     history,
     exerciseBank: mainData.exerciseBank || [],
+    weeklyGoal: mainData.weeklyGoal,
     _version: mainData._version,
   };
 }
