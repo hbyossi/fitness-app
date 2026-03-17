@@ -1,5 +1,5 @@
 import React, { useEffect, useCallback, useState } from 'react';
-import { debouncedSaveCloud, loadCloudData, listenCloudData, saveCloudData } from '../utils/firebaseSync';
+import { debouncedSaveCloud, loadCloudData, listenCloudData } from '../utils/firebaseSync';
 import { useAuth } from './AuthContext';
 import { PlansProvider, usePlans } from './PlansContext';
 import { HistoryProvider, useHistory } from './HistoryContext';
@@ -14,17 +14,22 @@ function Persister({ children }: { children: React.ReactNode }) {
   const { history } = useHistory();
   const { exerciseBank } = useBank();
   const { user } = useAuth();
+  // Keep user in a ref so token refreshes (new User object, same UID) don't
+  // trigger a save with potentially stale/empty state.
+  const userRef = React.useRef(user);
   const isFirst = React.useRef(true);
+
+  useEffect(() => { userRef.current = user; }, [user]);
 
   useEffect(() => {
     if (isFirst.current) {
       isFirst.current = false;
       return;
     }
-    if (user) {
-      debouncedSaveCloud(user.uid, { plans, history, exerciseBank });
+    if (userRef.current) {
+      debouncedSaveCloud(userRef.current.uid, { plans, history, exerciseBank });
     }
-  }, [plans, history, exerciseBank, user]);
+  }, [plans, history, exerciseBank]);
 
   return <>{children}</>;
 }
@@ -66,13 +71,14 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           setState(cloudData);
           return;
         }
+        // Truly new user — no data exists yet
+        setState(emptyState);
       } catch (e) {
         console.error('Failed to load cloud data:', e);
-      }
-      if (!cancelled) {
-        setState(emptyState);
-        // Push empty state to initialize cloud doc
-        saveCloudData(user!.uid, emptyState).catch(console.error);
+        if (!cancelled) {
+          alert('שגיאה בטעינת הנתונים: ' + (e instanceof Error ? e.message : String(e)));
+          setState(emptyState);
+        }
       }
     }
 

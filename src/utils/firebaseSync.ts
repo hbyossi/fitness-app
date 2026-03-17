@@ -3,6 +3,8 @@ import {
   collection,
   getDoc,
   getDocs,
+  getDocFromServer,
+  getDocsFromServer,
   setDoc,
   onSnapshot,
   writeBatch,
@@ -49,14 +51,28 @@ async function batchDeleteHistory(uid: string, ids: string[]): Promise<void> {
 }
 
 export async function loadCloudData(uid: string): Promise<AppState | null> {
-  const [mainSnap, historySnap] = await Promise.all([
-    getDoc(mainDocRef(uid)),
-    getDocs(historyColRef(uid)),
-  ]);
+  // Always fetch from server so the app starts with authoritative data.
+  // This prevents CloudListener's network snapshot from overwriting
+  // locally-added items that haven't been saved yet.
+  // Falls back to cache if offline.
+  let mainSnap: Awaited<ReturnType<typeof getDoc>>;
+  let historySnap: Awaited<ReturnType<typeof getDocs>>;
+  try {
+    [mainSnap, historySnap] = await Promise.all([
+      getDocFromServer(mainDocRef(uid)),
+      getDocsFromServer(historyColRef(uid)),
+    ]);
+  } catch {
+    [mainSnap, historySnap] = await Promise.all([
+      getDoc(mainDocRef(uid)),
+      getDocs(historyColRef(uid)),
+    ]);
+  }
 
   if (!mainSnap.exists() && historySnap.empty) return null;
 
-  const mainData = mainSnap.exists() ? mainSnap.data() : {};
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const mainData: any = mainSnap.exists() ? mainSnap.data() : {};
 
   // History from subcollection
   let history: HistoryEntry[] = historySnap.docs.map((d) => d.data() as HistoryEntry);
@@ -103,9 +119,11 @@ export function debouncedSaveCloud(uid: string, data: AppState): void {
   if (savePending) clearTimeout(savePending);
   savePending = setTimeout(() => {
     const { history, ...mainData } = data;
-    // Save main doc
-    setDoc(mainDocRef(uid), { ...mainData, _lastModified: Date.now() }).catch(console.error);
-    // Upsert history (no deletion for performance — full sync happens on saveCloudData)
+    setDoc(mainDocRef(uid), { ...mainData, _lastModified: Date.now() })
+      .catch((e) => {
+        console.error('Save failed:', e);
+        alert('שגיאה בשמירת הנתונים: ' + (e instanceof Error ? e.message : String(e)));
+      });
     if (history && history.length > 0) {
       batchUpsertHistory(uid, history).catch(console.error);
     }
