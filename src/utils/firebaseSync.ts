@@ -130,6 +130,25 @@ export function addToHistoryTracking(entries: HistoryEntry[]): void {
   for (const e of entries) lastSyncedHistoryIds.add(e.id);
 }
 
+/** Exposed for testing: returns the current set of tracked history IDs. */
+export function _getTrackedHistoryIds(): Set<string> {
+  return lastSyncedHistoryIds;
+}
+
+/**
+ * Compute the delta between the last-synced history and the current history.
+ * Pure function — no side effects.
+ */
+export function computeHistoryDelta(
+  lastSyncedIds: Set<string>,
+  currentHistory: HistoryEntry[],
+): { added: HistoryEntry[]; removedIds: string[] } {
+  const currentIds = new Set(currentHistory.map((e) => e.id));
+  const added = currentHistory.filter((e) => !lastSyncedIds.has(e.id));
+  const removedIds = [...lastSyncedIds].filter((id) => !currentIds.has(id));
+  return { added, removedIds };
+}
+
 export function debouncedSaveCloud(uid: string, data: AppState): void {
   if (savePending) clearTimeout(savePending);
   savePending = setTimeout(() => {
@@ -148,9 +167,7 @@ export function debouncedSaveCloud(uid: string, data: AppState): void {
       });
 
     // Compute history delta
-    const currentIds = new Set(currentHistory.map((e) => e.id));
-    const added = currentHistory.filter((e) => !lastSyncedHistoryIds.has(e.id));
-    const removedIds = [...lastSyncedHistoryIds].filter((id) => !currentIds.has(id));
+    const { added, removedIds } = computeHistoryDelta(lastSyncedHistoryIds, currentHistory);
 
     if (added.length > 0) {
       batchUpsertHistory(uid, added).catch(console.error);
@@ -160,7 +177,7 @@ export function debouncedSaveCloud(uid: string, data: AppState): void {
     }
 
     // Update tracking set
-    lastSyncedHistoryIds = currentIds;
+    lastSyncedHistoryIds = new Set(currentHistory.map((e) => e.id));
   }, 1000);
 }
 

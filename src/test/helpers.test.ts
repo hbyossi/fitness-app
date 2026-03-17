@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { generateId, formatDate, formatTime, MUSCLE_GROUPS } from '../utils/helpers';
+import { generateId, formatDate, formatTime, formatReps, parseReps, MUSCLE_GROUPS } from '../utils/helpers';
 
 describe('generateId', () => {
   it('returns a non-empty string', () => {
@@ -46,5 +46,53 @@ describe('MUSCLE_GROUPS', () => {
     expect(Array.isArray(MUSCLE_GROUPS)).toBe(true);
     expect(MUSCLE_GROUPS.length).toBeGreaterThan(0);
     MUSCLE_GROUPS.forEach((g) => expect(typeof g).toBe('string'));
+  });
+});
+
+describe('formatReps', () => {
+  it('returns single number when no repsMax', () => {
+    expect(formatReps(12)).toBe('12');
+  });
+
+  it('returns single number when repsMax equals reps', () => {
+    expect(formatReps(10, 10)).toBe('10');
+  });
+
+  it('returns range when repsMax > reps', () => {
+    expect(formatReps(8, 12)).toBe('8-12');
+  });
+
+  it('returns single number when repsMax < reps', () => {
+    expect(formatReps(12, 8)).toBe('12');
+  });
+});
+
+describe('parseReps', () => {
+  it('parses single number', () => {
+    expect(parseReps('10')).toEqual({ reps: 10 });
+  });
+
+  it('parses range with hyphen', () => {
+    expect(parseReps('8-12')).toEqual({ reps: 8, repsMax: 12 });
+  });
+
+  it('parses range with en-dash', () => {
+    expect(parseReps('8\u201312')).toEqual({ reps: 8, repsMax: 12 });
+  });
+
+  it('parses range with spaces around dash', () => {
+    expect(parseReps('8 - 12')).toEqual({ reps: 8, repsMax: 12 });
+  });
+
+  it('defaults to 12 for invalid input', () => {
+    expect(parseReps('abc')).toEqual({ reps: 12 });
+  });
+
+  it('defaults to 12 for zero', () => {
+    expect(parseReps('0')).toEqual({ reps: 12 });
+  });
+
+  it('trims whitespace', () => {
+    expect(parseReps('  10  ')).toEqual({ reps: 10 });
   });
 });

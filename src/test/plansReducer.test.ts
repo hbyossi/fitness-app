@@ -111,4 +111,72 @@ describe('plansReducer', () => {
     const result = plansReducer(state, { type: 'IMPORT_PLANS', payload: imported });
     expect(result).toBe(imported);
   });
+
+  it('MERGE_PLANS adds only plans with new IDs', () => {
+    const existing = makePlan({ id: 'plan-1', name: 'Existing' });
+    const remote1 = makePlan({ id: 'plan-1', name: 'Remote Duplicate' });
+    const remote2 = makePlan({ id: 'plan-2', name: 'Remote New' });
+    const result = plansReducer([existing], { type: 'MERGE_PLANS', payload: [remote1, remote2] });
+    expect(result).toHaveLength(2);
+    expect(result[0].name).toBe('Existing');
+    expect(result[1].name).toBe('Remote New');
+  });
+
+  it('MERGE_PLANS with empty payload returns state unchanged', () => {
+    const state = [makePlan()];
+    const result = plansReducer(state, { type: 'MERGE_PLANS', payload: [] });
+    expect(result).toEqual(state);
+  });
+
+  it('RESTORE_PLAN appends the plan', () => {
+    const state = [makePlan()];
+    const restored = makePlan({ id: 'plan-restored', name: 'Restored' });
+    const result = plansReducer(state, { type: 'RESTORE_PLAN', payload: restored });
+    expect(result).toHaveLength(2);
+    expect(result[1].id).toBe('plan-restored');
+  });
+
+  it('REMOVE_EXERCISE_FROM_PLAN removes the exercise and drops empty workouts', () => {
+    const state = [makePlan()];
+    const result = plansReducer(state, {
+      type: 'REMOVE_EXERCISE_FROM_PLAN',
+      payload: { planId: 'plan-1', workoutId: 'w-1', exerciseId: 'ex-1' },
+    });
+    // Workout had only one exercise, so it should be removed entirely
+    expect(result[0].workouts).toHaveLength(0);
+  });
+
+  it('REMOVE_EXERCISE_FROM_PLAN keeps workout if other exercises remain', () => {
+    const plan = makePlan();
+    plan.workouts[0].exercises.push({
+      id: 'ex-2', name: 'Squat', sets: 3, reps: 10, weight: 80, restTime: 90,
+      instructions: { startingPosition: '', execution: '', tempo: '', notes: '' },
+    });
+    const result = plansReducer([plan], {
+      type: 'REMOVE_EXERCISE_FROM_PLAN',
+      payload: { planId: 'plan-1', workoutId: 'w-1', exerciseId: 'ex-1' },
+    });
+    expect(result[0].workouts).toHaveLength(1);
+    expect(result[0].workouts[0].exercises).toHaveLength(1);
+    expect(result[0].workouts[0].exercises[0].id).toBe('ex-2');
+  });
+
+  it('REMOVE_EXERCISES_BY_NAME removes across all workouts', () => {
+    const plan = makePlan();
+    plan.workouts.push({
+      id: 'w-2', name: 'Workout B', muscleGroup: 'גב',
+      exercises: [
+        { id: 'ex-3', name: 'Bench Press', sets: 3, reps: 10, weight: 60, restTime: 90,
+          instructions: { startingPosition: '', execution: '', tempo: '', notes: '' } },
+        { id: 'ex-4', name: 'Row', sets: 3, reps: 10, weight: 50, restTime: 90,
+          instructions: { startingPosition: '', execution: '', tempo: '', notes: '' } },
+      ],
+    });
+    const result = plansReducer([plan], { type: 'REMOVE_EXERCISES_BY_NAME', payload: 'Bench Press' });
+    // w-1 had only Bench Press → removed. w-2 keeps Row.
+    expect(result[0].workouts).toHaveLength(1);
+    expect(result[0].workouts[0].id).toBe('w-2');
+    expect(result[0].workouts[0].exercises).toHaveLength(1);
+    expect(result[0].workouts[0].exercises[0].name).toBe('Row');
+  });
 });

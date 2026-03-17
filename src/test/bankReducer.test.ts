@@ -54,4 +54,29 @@ describe('bankReducer', () => {
     const result = bankReducer(state, { type: 'IMPORT_BANK', payload: imported });
     expect(result).toBe(imported);
   });
+
+  it('MERGE_BANK adds only exercises with new IDs', () => {
+    const existing = makeBank({ id: 'b-1', name: 'Bench Press' });
+    const duplicate = makeBank({ id: 'b-1', name: 'Duplicate Bench' });
+    const newEx = makeBank({ id: 'b-2', name: 'Squat' });
+    const result = bankReducer([existing], { type: 'MERGE_BANK', payload: [duplicate, newEx] });
+    expect(result).toHaveLength(2);
+    expect(result[0].name).toBe('Bench Press');
+    expect(result[1].name).toBe('Squat');
+  });
+
+  it('MERGE_BANK with empty payload returns state unchanged', () => {
+    const state = [makeBank()];
+    const result = bankReducer(state, { type: 'MERGE_BANK', payload: [] });
+    expect(result).toEqual(state);
+  });
+
+  it('RESTORE_BANK_EXERCISE appends the exercise', () => {
+    const state = [makeBank()];
+    const restored = makeBank({ id: 'b-restored', name: 'Restored Curl' });
+    const result = bankReducer(state, { type: 'RESTORE_BANK_EXERCISE', payload: restored });
+    expect(result).toHaveLength(2);
+    expect(result[1].id).toBe('b-restored');
+    expect(result[1].name).toBe('Restored Curl');
+  });
 });
