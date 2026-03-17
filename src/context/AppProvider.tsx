@@ -1,5 +1,5 @@
 import React, { useEffect, useCallback, useState } from 'react';
-import { debouncedSaveCloud, loadCloudData, listenCloudData } from '../utils/firebaseSync';
+import { debouncedSaveCloud, loadCloudData } from '../utils/firebaseSync';
 import { useAuth } from './AuthContext';
 import { PlansProvider, usePlans } from './PlansContext';
 import { HistoryProvider, useHistory } from './HistoryContext';
@@ -34,26 +34,6 @@ function Persister({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
-// Listens for remote Firestore changes and imports them into React state
-function CloudListener() {
-  const { user } = useAuth();
-  const importData = useImportData();
-
-  useEffect(() => {
-    if (!user) return;
-    let skipFirst = true;
-    const unsub = listenCloudData(user.uid, (data) => {
-      if (skipFirst) {
-        skipFirst = false;
-        return;
-      }
-      importData(data);
-    });
-    return unsub;
-  }, [user, importData]);
-
-  return null;
-}
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<AppState | null>(null);
@@ -130,7 +110,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       <HistoryProvider initialHistory={state.history}>
         <BankProvider initialBank={state.exerciseBank}>
           <Persister>
-            <CloudListener />
             {children}
           </Persister>
         </BankProvider>
