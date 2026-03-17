@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useCallback, useState } from 'react';
-import { debouncedSaveCloud, loadCloudData, initHistoryTracking } from '../utils/firebaseSync';
+import { debouncedSaveCloud, loadCloudData, initHistoryTracking, listenCloudData, addToHistoryTracking } from '../utils/firebaseSync';
 import { useAuth } from './AuthContext';
 import { PlansProvider, usePlans } from './PlansContext';
 import { HistoryProvider, useHistory } from './HistoryContext';
@@ -23,10 +23,10 @@ export function useWeeklyGoal(): WeeklyGoalContextType {
 
 // Inner component that watches all slices and persists to cloud
 function Persister({ children }: { children: React.ReactNode }) {
-  const { plans } = usePlans();
-  const { history } = useHistory();
-  const { exerciseBank } = useBank();
-  const { weeklyGoal } = useWeeklyGoal();
+  const { plans, dispatchPlans } = usePlans();
+  const { history, dispatchHistory } = useHistory();
+  const { exerciseBank, dispatchBank } = useBank();
+  const { weeklyGoal, setWeeklyGoal } = useWeeklyGoal();
   const { user } = useAuth();
   // Keep user in a ref so token refreshes (new User object, same UID) don't
   // trigger a save with potentially stale/empty state.
@@ -34,6 +34,21 @@ function Persister({ children }: { children: React.ReactNode }) {
   const isFirst = React.useRef(true);
 
   useEffect(() => { userRef.current = user; }, [user]);
+
+  // Listen for real-time changes from other devices
+  useEffect(() => {
+    if (!user) return;
+    return listenCloudData(user.uid, (remoteData) => {
+      dispatchPlans({ type: 'MERGE_PLANS', payload: remoteData.plans });
+      dispatchHistory({ type: 'MERGE_HISTORY', payload: remoteData.history });
+      dispatchBank({ type: 'MERGE_BANK', payload: remoteData.exerciseBank });
+      // Mark remote history entries as synced so delta-save won't re-write them
+      addToHistoryTracking(remoteData.history);
+      if (remoteData.weeklyGoal !== undefined) {
+        setWeeklyGoal(remoteData.weeklyGoal);
+      }
+    });
+  }, [user, dispatchPlans, dispatchHistory, dispatchBank, setWeeklyGoal]);
 
   useEffect(() => {
     if (isFirst.current) {

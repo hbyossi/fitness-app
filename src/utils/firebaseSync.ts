@@ -117,9 +117,17 @@ export async function saveCloudData(uid: string, data: AppState): Promise<void> 
 let savePending: ReturnType<typeof setTimeout> | null = null;
 let lastSyncedHistoryIds: Set<string> = new Set();
 
+// Timestamp of our last write so the listener can skip its own echoes.
+let _lastWrittenModified: number | null = null;
+
 /** Call once after initial load to seed the tracking set. */
 export function initHistoryTracking(history: HistoryEntry[]): void {
   lastSyncedHistoryIds = new Set(history.map((e) => e.id));
+}
+
+/** Mark remote history entries as already synced so delta-save won't re-write them. */
+export function addToHistoryTracking(entries: HistoryEntry[]): void {
+  for (const e of entries) lastSyncedHistoryIds.add(e.id);
 }
 
 export function debouncedSaveCloud(uid: string, data: AppState): void {
@@ -128,8 +136,12 @@ export function debouncedSaveCloud(uid: string, data: AppState): void {
     const { history, ...mainData } = data;
     const currentHistory = history || [];
 
+    // Track our write timestamp so the real-time listener skips our own echo
+    const ts = Date.now();
+    _lastWrittenModified = ts;
+
     // Always save the main doc (plans, bank, weeklyGoal — small)
-    setDoc(mainDocRef(uid), { ...mainData, _lastModified: Date.now() })
+    setDoc(mainDocRef(uid), { ...mainData, _lastModified: ts })
       .catch((e) => {
         console.error('Save failed:', e);
         alert('שגיאה בשמירת הנתונים: ' + (e instanceof Error ? e.message : String(e)));
@@ -152,35 +164,66 @@ export function debouncedSaveCloud(uid: string, data: AppState): void {
   }, 1000);
 }
 
-export function listenCloudData(uid: string, onData: (data: AppState) => void): Unsubscribe {
-  let mainState: { plans: AppState['plans']; exerciseBank: AppState['exerciseBank']; _version?: number } = {
-    plans: [],
-    exerciseBank: [],
-  };
+/**
+ * Listen for real-time changes from other devices.
+ * Skips the initial snapshot (already loaded via loadCloudData) and
+ * our own confirmed writes (matched via _lastWrittenModified).
+ */
+export function listenCloudData(
+  uid: string,
+  onRemoteChange: (data: AppState) => void,
+): Unsubscribe {
+  let mainState: {
+    plans: AppState['plans'];
+    exerciseBank: AppState['exerciseBank'];
+    weeklyGoal?: number;
+    _version?: number;
+  } = { plans: [], exerciseBank: [] };
   let historyEntries: HistoryEntry[] = [];
-  let mainReady = false;
-  let historyReady = false;
+  let mainInitialDone = false;
+  let historyInitialDone = false;
 
   function emit() {
-    if (mainReady && historyReady) {
-      onData({ ...mainState, history: historyEntries });
-    }
+    if (!mainInitialDone || !historyInitialDone) return;
+    onRemoteChange({ ...mainState, history: historyEntries });
   }
 
   const unsubMain = onSnapshot(mainDocRef(uid), (snap) => {
+    // Ignore local optimistic writes not yet confirmed by server
+    if (snap.metadata.hasPendingWrites) return;
+
     if (snap.exists()) {
       const d = snap.data();
-      mainState = { plans: d.plans || [], exerciseBank: d.exerciseBank || [], _version: d._version };
+      // Skip our own confirmed writes
+      if (d._lastModified === _lastWrittenModified) {
+        if (!mainInitialDone) mainInitialDone = true;
+        return;
+      }
+      mainState = {
+        plans: d.plans || [],
+        exerciseBank: d.exerciseBank || [],
+        weeklyGoal: d.weeklyGoal,
+        _version: d._version,
+      };
     } else {
       mainState = { plans: [], exerciseBank: [] };
     }
-    mainReady = true;
+
+    // Skip the very first snapshot (data already loaded)
+    if (!mainInitialDone) {
+      mainInitialDone = true;
+      return;
+    }
     emit();
   });
 
   const unsubHistory = onSnapshot(historyColRef(uid), (snap) => {
     historyEntries = snap.docs.map((d) => d.data() as HistoryEntry);
-    historyReady = true;
+    // Skip the very first snapshot (data already loaded)
+    if (!historyInitialDone) {
+      historyInitialDone = true;
+      return;
+    }
     emit();
   });
 
